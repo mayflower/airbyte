@@ -6,7 +6,9 @@ connectionSpecification:
   required:
     - paths
   properties:
-    # 'TODO: This schema defines the configuration required for the source. This usually involves metadata such as database and/or authentication information.':
     paths:
       type: array
-      description: describe me
+      description: An array of strings, each representing a file path, directory, or URL to a file to be embedded using Langchain Docling.
+    recursive:
+      type: boolean
+      description: A boolean indicating whether files in directories should be embedded recursively when set to true.
