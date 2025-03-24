@@ -4,11 +4,10 @@ connectionSpecification:
   title: Langchain Docling Loader Spec
   type: object
   required:
-    - paths
+    - uris
   properties:
-    paths:
+    uris:
       type: array
-      description: An array of strings, each representing a file path, directory, or URL to a file to be embedded using Langchain Docling.
-    recursive:
-      type: boolean
-      description: A boolean indicating whether files in directories should be embedded recursively when set to true.
+      items:
+        type: string
+      description: An array of strings, each representing a file- or directory path to be embedded using Langchain Docling.
