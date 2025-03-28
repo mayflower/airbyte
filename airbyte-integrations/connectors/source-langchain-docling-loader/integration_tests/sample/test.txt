@@ -1,0 +1,5 @@
+This is a sample text file for testing the DoclingLoader connector.
+
+It contains multiple lines to test document loading and chunking.
+
+This file should be processed by the connector during integration tests.

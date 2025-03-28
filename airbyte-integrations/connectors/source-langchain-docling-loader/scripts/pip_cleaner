@@ -1,0 +1,125 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# pip_cleaner - Script to install and clean up pip packages
+# Author: ChatGPT
+# Usage:
+#   Install mode: ./pip_cleaner install <package1> [package2 package3 ...]
+#   Uninstall mode: ./pip_cleaner uninstall
+
+# Get a unique name for this script instance based on its path
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_HASH=$(echo "$SCRIPT_PATH" | md5sum | cut -d' ' -f1)
+STATE_FILE="/tmp/pip_cleaner_state_$SCRIPT_HASH"
+
+# Check if mode is provided
+if [ -z "$1" ]; then
+    echo "Error: No mode provided"
+    echo "Usage:"
+    echo "  Install mode: $0 install <package1> [package2 package3 ...]"
+    echo "  Uninstall mode: $0 uninstall"
+    exit 1
+fi
+
+MODE="$1"
+shift  # Remove the mode argument, leaving only the packages
+
+case "$MODE" in
+    "install")
+        # Check if at least one package name was provided
+        if [ $# -eq 0 ]; then
+            echo "Error: No package names provided for installation"
+            echo "Usage: $0 install <package1> [package2 package3 ...]"
+            exit 1
+        fi
+
+        # Create temporary files for before and after snapshots
+        TEMP_FILE_BEFORE=$(mktemp)
+        TEMP_FILE_AFTER=$(mktemp)
+
+        echo "📦 Creating snapshot of currently installed packages..."
+        pip list --format freeze > "$TEMP_FILE_BEFORE"
+
+        # Install all specified packages
+        echo "📥 Installing packages: $@"
+        pip install "$@"
+
+        echo "📦 Creating snapshot of packages after installation..."
+        pip list --format freeze > "$TEMP_FILE_AFTER"
+
+        echo "🔍 Identifying newly installed packages..."
+        # Find packages that are in AFTER but not in BEFORE
+        NEW_PACKAGES=$(grep -Fxvf "$TEMP_FILE_BEFORE" "$TEMP_FILE_AFTER")
+
+        # Count how many new packages were installed
+        NEW_PACKAGE_COUNT=$(echo "$NEW_PACKAGES" | grep -v "^$" | wc -l)
+
+        if [ "$NEW_PACKAGE_COUNT" -eq 0 ]; then
+            echo "✅ No new packages were installed."
+            rm "$TEMP_FILE_BEFORE" "$TEMP_FILE_AFTER"
+            exit 0
+        fi
+
+        echo "🧹 The following $NEW_PACKAGE_COUNT packages were newly installed:"
+        echo "$NEW_PACKAGES"
+
+        # Append the list of newly installed packages for later cleanup
+        # Create state file if it doesn't exist
+        touch "$STATE_FILE"
+
+        # Merge existing packages with new ones (avoiding duplicates)
+        FINAL_PACKAGES=$(cat "$STATE_FILE" 2>/dev/null; echo "$NEW_PACKAGES")
+
+        # Filter out empty lines and store unique packages
+        echo "$FINAL_PACKAGES" | grep -v "^$" | sort | uniq > "$STATE_FILE"
+
+        TOTAL_PACKAGES=$(cat "$STATE_FILE" | grep -v "^$" | wc -l)
+
+        echo "📝 Updated package list saved to $STATE_FILE"
+        echo "📊 Total packages tracked for uninstallation: $TOTAL_PACKAGES"
+        echo "✨ You can now run your Python script using the installed packages"
+        echo "⚠️ When you're done, run '$0 uninstall' to remove all tracked packages"
+
+        # Clean up temporary files
+        rm "$TEMP_FILE_BEFORE" "$TEMP_FILE_AFTER"
+        ;;
+
+    "uninstall")
+        if [ -f "$STATE_FILE" ]; then
+            PACKAGES_TO_UNINSTALL=$(cat "$STATE_FILE")
+            PACKAGE_COUNT=$(echo "$PACKAGES_TO_UNINSTALL" | grep -v "^$" | wc -l)
+
+            if [ "$PACKAGE_COUNT" -eq 0 ]; then
+                echo "✅ No packages to uninstall."
+                rm -f "$STATE_FILE"
+                exit 0
+            fi
+
+            echo "🧹 Uninstalling $PACKAGE_COUNT packages:"
+            echo "$PACKAGES_TO_UNINSTALL"
+
+            # Automatically uninstall packages
+            echo "🗑️ Uninstalling packages..."
+            echo "$PACKAGES_TO_UNINSTALL" | xargs pip uninstall -y
+            echo "✅ Uninstallation complete."
+
+            # Remove the state file
+            rm -f "$STATE_FILE"
+        else
+            echo "❌ Error: No previous installation state found at $STATE_FILE"
+            echo "Run '$0 install <package1> [package2 package3 ...]' first"
+            exit 1
+        fi
+        ;;
+
+    *)
+        echo "❌ Error: Unknown mode '$MODE'"
+        echo "Usage:"
+        echo "  Install mode: $0 install <package1> [package2 package3 ...]"
+        echo "  Uninstall mode: $0 uninstall"
+        exit 1
+        ;;
+esac
+
+echo "✨ Done!"

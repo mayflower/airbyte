@@ -1,0 +1,5 @@
+{
+  "paths": ["integration_tests/sample"],
+  "export_type": "DOC_CHUNKS",
+  "sync_mode": "full_refresh"
+}

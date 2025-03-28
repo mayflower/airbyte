@@ -1,0 +1,35 @@
+[build-system]
+requires = [ "poetry-core>=1.0.0",]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+version = "0.1.0"
+name = "source-langchain-docling-loader"
+description = "Source implementation for langchain-docling-loader."
+authors = [ "Airbyte <contact@airbyte.io>",]
+license = "MIT"
+readme = "README.md"
+documentation = "https://docs.airbyte.com/integrations/sources/langchain-docling-loader"
+homepage = "https://airbyte.com"
+repository = "https://github.com/airbytehq/airbyte"
+packages = [ { include = "source_langchain_docling_loader" }, {include = "main.py" } ]
+
+[tool.poetry.dependencies]
+airbyte-cdk = { git = "https://github.com/mayflower/airbyte-python-cdk.git", rev = "main" }
+docling-parse = "3.4"
+jsonref = "^1.1.0"
+langchain-docling = "^0.2.0"
+python = "^3.10,<3.12"
+python-magic = "^0.4.27"
+sentence-transformers = "^4.0.1"
+torch = "^2.6.0"
+torchvision = "^0.21.0"
+transformers = "^4.50.0"
+
+[tool.poetry.scripts]
+source-langchain-docling-loader = "source_langchain_docling_loader.run:run"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+pytest-mock = "*"
+requests-mock = "*"

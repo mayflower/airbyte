@@ -1,0 +1,40 @@
+{
+  "documentationUrl": "https://docs.airbyte.io/integrations/sources/langchain-docling-loader",
+  "connectionSpecification": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "LangChain DoclingLoader Source Spec",
+    "type": "object",
+    "required": ["paths"],
+    "additionalProperties": false,
+    "properties": {
+      "paths": {
+        "type": "array",
+        "title": "Paths",
+        "description": "List of file and directory paths to process. Files must be in supported formats. Directories will be recursively scanned for supported documents.",
+        "items": {
+          "type": "string"
+        },
+        "examples": [
+          [
+            "/path/to/documents",
+            "/path/to/specific/file.pdf",
+            "~/user_documents"
+          ]
+        ]
+      },
+      "export_type": {
+        "type": "string",
+        "title": "Export Type",
+        "description": "The export type for the documents. 'DOC_CHUNKS' (default) will chunk each document into separate LangChain Documents. 'MARKDOWN' will capture each input document as a separate LangChain Document.",
+        "default": "DOC_CHUNKS",
+        "enum": ["DOC_CHUNKS", "MARKDOWN"]
+      },
+      "chunker_tokenizer": {
+        "type": "string",
+        "title": "Chunker Tokenizer",
+        "description": "Optional tokenizer model ID to use with HybridChunker. Leave empty to not use chunking.",
+        "examples": ["gpt2", "bert-base-multilingual-cased"]
+      }
+    }
+  }
+}
