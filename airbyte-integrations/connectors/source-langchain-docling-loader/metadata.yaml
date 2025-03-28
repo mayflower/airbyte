@@ -1,0 +1,29 @@
+data:
+  allowedHosts:
+    hosts:
+      - "*"
+  registries:
+    oss:
+      enabled: true
+    cloud:
+      enabled: false
+  remoteRegistries:
+    pypi:
+      enabled: true
+      packageName: airbyte-source-langchain-docling-loader
+  connectorSubtype: file
+  connectorType: source
+  definitionId: 651bcae1-09e1-4574-bcff-7410c3c3ff2f
+  dockerImageTag: 0.1.0
+  dockerRepository: airbyte/source-langchain-docling-loader
+  githubIssueLabel: source-langchain-docling-loader
+  icon: langchain-docling-loader.svg
+  license: MIT
+  name: Langchain Docling Loader
+  releaseDate: TODO
+  supportLevel: community
+  releaseStage: alpha
+  documentationUrl: https://docs.airbyte.com/integrations/sources/langchain-docling-loader
+  tags:
+    - language:python
+metadataSpecVersion: "1.0"
