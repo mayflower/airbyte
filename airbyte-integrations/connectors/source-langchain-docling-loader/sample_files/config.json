@@ -1,0 +1,8 @@
+{
+  "paths": [
+    "/path/to/documents",
+    "/path/to/specific/document.pdf",
+    "~/user_documents"
+  ],
+  "export_type": "DOC_CHUNKS"
+}
