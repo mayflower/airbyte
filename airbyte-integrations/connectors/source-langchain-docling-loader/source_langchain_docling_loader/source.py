@@ -112,7 +112,7 @@ class DoclingStream(CheckpointMixin, Stream):
             chunker_tokenizer = EMBED_MODEL_ID
 
         self.logger.info(f"Using chunker tokenizer: {chunker_tokenizer}")
-        self.chunker = HybridChunker(tokenizer=chunker_tokenizer)
+        self.chunker = HybridChunker(tokenizer=chunker_tokenizer, max_tokens=100)
 
     @property
     def name(self) -> str:
