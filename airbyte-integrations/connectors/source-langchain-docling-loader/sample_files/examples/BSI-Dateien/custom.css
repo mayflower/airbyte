@@ -1,0 +1,533 @@
+/*DH Zertifikatsbutton im Bottom-Menu */
+.zertifikatsbutton img {width: 180px; margin: 0 15%;}
+/* DH Button-Hober für Image-Bilder */
+.picture a img {opacity: 1;}
+.picture a img:hover {
+background-color: rgba(238, 238, 238, 0.6);
+transition: all .4s ease;
+opacity: .6;
+}
+
+/* DH Layout Teaser Krisen Grosslagen */
+.keinbottom {margin-bottom: -20px;}
+#krisen-lagen a img:hover {}
+/*DH Cybersicherheitslotse Definitionen und Anpassungen */
+#cybersicherheitslotse {background: #ddd;}
+#cybersicherheitslotse .csl-einleitung p {background: #fff; padding: 10px 4px; font-size: 1.6rem; margin-bottom: 0px;}
+#cybersicherheitslotse .c-contact-table__list {margin-bottom: 0px;}
+#cybersicherheitslotse .csl-headerpadding {padding-bottom: 5px;}
+#cybersicherheitslotse .l-embedded {margin-bottom: -10px;}
+#cybersicherheitslotse .c-contact-table__item {margin-bottom: 7px;}
+#cybersicherheitslotse .c-contact-table__content {background: #f1f2f3; padding: 15px 15px;}
+#cybersicherheitslotse .column, .medium-up-2 > .columns {flex: 0 0 50%; max-width: 49.5%;}
+
+#cybersicherheitslotse .csl-footer {background: #015081; }
+#cybersicherheitslotse .csl-footer-text{padding: 6px 12px; color: #fff; font-size: 13px;}
+#cybersicherheitslotse .c-contact-table:not(.is-single-column) .c-contact-table__item:nth-child(2n+1) {padding: 0px 0px 0px 27px;}
+#cybersicherheitslotse .c-contact-table__content:hover { background-color: rgba(10,150,255,0.2);}
+/* Groessenanpassungen Smartphone */
+@media print, screen and (max-width: 37.4em) {
+#cybersicherheitslotse .column, .small-up-1 > .columns {flex: 0 0 100%; max-width: 100%;}
+#cybersicherheitslotse .c-contact-table:not(.is-single-column) .c-contact-table__item:nth-child(2n+1) {padding: 0px 1rem;}
+}
+/* Schriften */
+#cybersicherheitslotse .c-contact-table__headline p {font-size: 16px; font-weight: bold; margin-bottom 3px;}
+#cybersicherheitslotse .p .c-contact-table__content > p:last-child {font-size: 15px; margin-bottom 3px;}
+#cybersicherheitslotse .c-link, a.ContactData {font-weight: 400;}
+#cybersicherheitslotse .csl-footer-text a, .csl-footer-text a:hover {color: #eee;}
+
+
+_/* CB Anpassung Abstand nach unten */
+@media only screen and (min-width: 1024px) {
+.l-content-wrapper, .l-embedded {margin-bottom: 50px;}
+}
+/* DH Getaggte Abkürzungen werden innerhalb von Listen vorne und hinten ohne Leerzeichen angezeigt */
+li a abbr[title] { padding: 0 3px;} 
+/* DH In Aufzählungslisten werden Link falsch als Block dargestellt - hier Korrektur */
+li a.download, li a.Publication, li .c-link--download, li a.downloadLink {display: inline-flex;}
+/* DH Infos in den FAQ-Boxen Abstände von Rand zu Rand verbessern */
+.c-faq__answer {padding: 30px 20px 20px 20px;}
+/* DH Tabellen für Smartphone optimieren - Breite */
+@media only screen and (max-width: 1024px)
+{
+.responsiveTable table {width: 100%; }
+ .responsiveTable p {font-size: 1.3rem; line-height: 1.3;}
+}
+/*DH Tabellenheadline für "alternativ0" zentrieren und einfärben */
+.alternativ0 h2 {text-align: center; background: #f1f2f3;}
+/* DH: Diagramme - hier: Tooltip linksbündig platzieren */
+.c3 .c3-tooltip td > span {
+width: 0;
+margin-right: 0;
+}
+
+/* DH H2 im Content-Wrapper - Bottom-Kacheln mittig zentrieren */
+.row .s-richtext .h2 {text-align: center;}
+
+/* DH FAQ- Zeilenhöhe der Fragen vergrössern */
+.c-faq__question { line-height: 2.5rem;}
+
+/* DH Abstände nach Adressen */
+address {margin-bottom: 1.6rem;}
+
+/* DH Zitate verkleinern und Farbe aufhellen */
+.c-quote-slide__quote-text {
+ font-size: 3rem;
+ line-height: 4rem;
+ color: #555;
+}
+/* DH Download-Icons besser im Fliesstext positionieren */
+a.download::before, a.Publication::before, .c-link--download::before, a.downloadLink::before { left: -2px;}
+
+/* DH IT-Sicherheitskennzeichen - Sicherheitsinformationen Boxen */
+.itsik-box {width:100%; padding:5% 7%; border: solid 2px #f1f2f3; display: table; }
+.itsik-box-links {width: 78%; float: left;}
+.itsik-box-rechts {width:130px; float: right;}
+
+/* DH - Absatz nach Aufzählung oder Bulletpoints */
+ul ul, ol ul, ul ol, ol ol { margin-bottom: 1.5rem;}
+/* DH - Bildvergrößerungen werden bis auf 1280PX vergrößert und zentriert */
+.mfp-inline-holder .mfp-content, .mfp-ajax-holder .mfp-content {
+ max-width: 1680px;
+ left: 20%;
+ -webkit-transform: translateX(-5%);
+ -ms-transform: translateX(-5%);
+ transform: translateX(-5%);
+}
+@media only screen and (max-width: 1024px)
+{
+.mfp-inline-holder .mfp-content, .mfp-ajax-holder .mfp-content {
+ max-width: 1280px;
+ left: 10%;
+ -webkit-transform: translateX(-5%);
+ -ms-transform: translateX(-5%);
+ transform: translateX(-5%);
+}}
+
+/* Bühne im Z-Index hinter Navigation (Bullets) */
+.c-slider { z-index: 0;}
+/* Abstände für Tabellenzeilen verringern */
+.trAbstaende tbody::before {content: '';  display: block;  height: 15px;}
+.trAbstaende td {padding:10px 15px;}
+ 
+/* DH Verfahrensübersicht anpassen - grauer Balken rechts */
+@media only screen and (min-width: 1024px)
+{.generictable .c-progress__addition::before { right: 15%;}
+.c-progress__step { padding: 40px 0 40px 157px;}
+}
+
+/* DH blockquote im Texbereicht anpassen */
+blockquote p {
+ font-size: 3.4rem;
+ line-height: 1.2;
+ margin: 4.0rem 0;
+}
+blockquote {
+ margin: 0 0 1.5rem 40px;
+}
+blockquote cite {margin-bottom: 60px;
+}
+
+/* DH pre-texte korregieren */
+ pre { font-size: 1.6rem; line-height: 1.8rem; margin-bottom: 20px;}
+/* DH Anpassungen an Wortstyle: .grau */
+.grau {background: #efefef; color: #004F80; font-size: 1.8rem;}
+@media only screen and (max-width: 600px) {
+.fragebogen.quiz .picture {
+  width: auto !important;
+}
+}
+/*DG: Warenkorb - formerror*/
+.warenkorb .formError {color: #D0021B; font-size: 130%;}
+/*DH Warenkorb Feld "Anzahl" verbreitern*/
+.warenkorb input[type="number"], input[type="number"]::before, input[type="number"]::after {
+ width: 80px;
+}
+/*DG: Umfrage Button zurück von rechtem Pfeil auf linken Pfeil gesetzt */
+/* .quiz ~ .row input[value="Zurück"] {
+    border-color: #004F80;
+    background-color: #004F80;
+    background-image: url(/SiteGlobals/Frontend/Images/icons/arrow-left-white.svg?__blob=normal) !important;
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
+    background-position: calc(50% - 40px) calc(50% + 1px);
+    color: #fff;
+    -webkit-transition: .2s ease-in-out;    -o-transition: .2s ease-in-out;        -moz-transition: .2s ease-in-out;
+    transition: .2s ease-in-out;
+}
+*/
+/*DH: Formular-Anpassungen */
+label, .formLabel {font-size: 1.6rem;line-height: 1.6rem;}
+.margin70 {margin-top: -70px;}
+.margin50 {margin-top: -50px;}
+
+/* DH: Deutsch/englische Formulare englischer text wird grau */
+.formBox em, i {color: #777;}
+
+/* ********************* */
+/* DH Abstand H2 etwas größer nach oben */
+h2, .h2 {padding-top: 3rem;}
+/* DH Abstand H3 bis H6 etwas größer nach oben */
+h3, .h3, h4, .h4, h5, .h5, h6, .h6 {padding-top: 1.5rem;}
+.l-content-wrapper {margin-bottom: 30px;}
+/* DH: Imagemap-Buttons */
+.bsi_imagemap_kreis:hover > g > path{fill: #74B917; }
+.bsidiagrammsvg:hover {fill-opacity: .75; stroke: #003366; stroke-width: 0.5%;}
+/*   */
+/* DH Fein-Justierungen von Abständen und Schriften */
+/* ********************* */
+.l-content-wrapper > h3.rahmen {text-align: center;}
+
+.c-teaser__title {padding-bottom: 30px; font-size:1.9rem; line-height: 1.4;}
+.kritis-list { list-style-type: none; }
+@media only screen and (min-width: 600px), print{
+.radio_format .formField > span:last-child {
+  margin-right: 0;
+}}
+.radio_format .formField::after {
+  clear: both;
+}
+.radio_format .formField > span {
+  float: left;
+  margin-right: 25px;
+}
+/*Style verhindert den korrekten Style aus dem Frontend für die social media icons im footer. Falls nicht benötigt löschen.*/
+/*.c-follow__link--xing::before {
+content: '';
+display: inline-block;
+position: absolute;
+width: 46px;
+height: 46px;
+background: url("../icons/xing.png") no-repeat;
+background-size: 100%;
+}*/
+
+.c-follow__link--xing:active::before,.c-follow__link--xing:focus::before,.c-follow__link--xing:hover::before {
+  transform: scale(1.2);
+}
+.c-follow__link--twitter:active::before,.c-follow__link--twitter:focus::before,.c-follow__link--twitter:hover::before {
+  transform: scale(1.2);
+}.fragebogen.formBox select {
+  width: 100%;
+}
+.fragebogen.formBox .row .columns:nth-child(2) {
+/*  margin-top: -15px; */
+}
+
+
+.c-search-box form .formField + .formField,.c-search-box form .formLabel + .formLabel {
+  margin-top: 15px;
+}
+
+div.c-search-result-teaser__link:hover, div.c-search-result-teaser__link:focus, div.c-search-result-teaser__link:active {
+  background: none;
+}
+
+div.c-search-result-teaser__link:hover .c-search-result-teaser__headline, div.c-search-result-teaser__link:focus .c-search-result-teaser__headline, div.c-search-result-teaser__link:active .c-search-result-teaser__headline {
+  text-decoration: none;
+}
+.c-faq__answer .c-link--download {
+  display: inline-block;
+}
+
+/* ACS - ACS - ACS - ACS */
+
+/* DH: Startseite grauer Kasten Smartphone */
+@media only screen and (max-width: 600px){
+.c-teilnehmer-acs {
+ padding: 1em 4em;}
+.c-teilnehmer-acs__box {
+ display: none;
+}}
+
+
+.s-acs .c-facet .heading:hover,
+.s-acs .c-facet .heading:hover button,
+.s-acs .c-facet .heading:focus,
+.s-acs .c-facet .heading:focus button,
+.s-acs .c-facet .heading:active,
+.s-acs .c-facet .heading:active button,
+.s-acs .c-facet .heading:focus-within,
+.s-acs .c-facet .heading:focus-within button {
+    color: white;
+}
+.s-acs .c-facet .heading:hover::before,
+.s-acs .c-facet .heading:focus::before,
+.s-acs .c-facet .heading:active::before,
+.s-acs .c-facet .heading:focus-within::before {
+    content: '';
+    display: inline-block;
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: url(/SiteGlobals/Frontend/Images/icons/sprite.svg?__blob=normal) no-repeat -50px -940px;
+}
+.s-acs .c-facet .heading.active-control::before {
+    content: '';
+    display: inline-block;
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: url(/SiteGlobals/Frontend/Images/icons/sprite.svg?__blob=normal) no-repeat -926px -300px;
+}
+.c-facet .heading:active:focus,
+.c-facet .heading:focus:focus,
+.c-facet .heading:hover:focus {
+    background-color: #0778A5;
+}
+
+.c-teilnehmer-acs__box p.participant.corner strong {
+font-size: 48px !important;
+}
+
+.s-richtext > ul > li a + br {
+  display: block;
+  line-height: 0px !important;
+}
+
+/*********************************************
+** SZ 35: Erweiterungen Produktinformationsseiten
+**********************************************/
+.c-button-secondary{font-size:1.3rem;line-height:1.2;background:#FFF;min-width:200px;max-width:100%;padding:19px 20px;border:solid 1px #004F80;border-radius:4px;color:#004F80;text-align:center;text-transform:uppercase;-webkit-transition-property:background, color;transition-property:background, color}
+.c-button-secondary:active,.c-button-secondary:focus,.c-button-secondary:hover{background-color:#004F80;color:#FFF;text-decoration:none}
+.c-button-secondary__text{position:relative}
+.c-progress__buttons > *:first-child{
+  margin-left: 0px;
+  margin-top: 0px;
+}
+.c-progress__buttons > *{
+  margin-left: 0px;
+  margin-top: 20px;
+}
+@media only screen and (min-width: 1024px), print {
+  .c-button-secondary{min-width:250px}
+   .c-progress__buttons > *{
+      margin-left: 20px;
+      margin-top: 0px;
+    }
+}
+@media only screen and (min-width: 600px), print {
+   .c-progress__buttons > *{
+      margin-left: 20px;
+      margin-top: 0px;
+    }
+}
+
+.c-progress__addition-bottom {
+ padding-top:10px;
+ position:relative
+}
+.c-progress__addition-bottom *:last-child {
+ margin-bottom:0
+}
+
+.c-progress__addition-bottom .c-progress__headline {
+ margin-top:25px
+}
+.c-progress__addition-bottom .c-progress__headline:first-of-type {
+ margin-top:0
+}
+
+.c-security-information--GelbInBehebung .c-security-information__heading::before {
+  background:url(/SiteGlobals/Frontend/Images/icons/info-icon-yellowinsolution.svg?__blob=normal&v=1) no-repeat center;
+  background-size:100% auto
+}
+
+.c-security-information--GelbInBehebung .c-security-information__text {
+  background-color:#F5A623;
+  padding:12px
+}
+@media only screen and (min-width: 600px), print {
+  .c-security-information--GelbInBehebung .c-security-information__content::before {
+    background:url(/SiteGlobals/Frontend/Images/icons/info-icon-yellowinsolution.svg?__blob=normal&v=1) no-repeat center;
+    background-size:100% auto
+  }
+}
+
+:lang(en) .c-security-information--green-update .c-security-information__heading::before {
+  background:url(/SiteGlobals/Frontend/Images/icons/info-icon-green-update_en.svg?__blob=normal&v=2) no-repeat center;
+  background-size:100% auto
+}
+
+:lang(en) .c-security-information--green-update .c-security-information__text {
+  border-left:4px solid #004F80;
+  padding-left:24px
+}
+@media only screen and (min-width: 600px), print {
+    :lang(en) .c-security-information--green-update .c-security-information__content::before {
+    background:url(/SiteGlobals/Frontend/Images/icons/info-icon-green-update_en.svg?__blob=normal&v=2) no-repeat center;
+    background-size:100% auto
+  }
+}
+
+
+/***
+** Anpassungen Redesign PIS
+***/
+
+@media only screen and (min-width: 600px), print {
+  .c-product-stage__head {
+      padding-bottom: 50px;
+      padding-top: 30px;
+  }
+  .c-product-stage {
+      padding-bottom: 10px;
+  }
+  .c-product-label-short {
+      padding-bottom: 0px;
+      
+  }
+  .c-product-label-short__heading {
+    padding-top: 0 !important
+  }
+  .c-product-label-short__subheading {
+    margin-bottom: 0.5rem 
+  }
+  
+  .c-product-content__controls {
+    margin-bottom: 20px;
+  }
+  .c-product-label-short__image{
+     margin-top: 0px !important;
+     margin-bottom:0px !important;
+  }
+}
+
+  .c-product-content__text {
+    padding-top: 10px;
+  }
+  
+  .c-product-info .richtext-accordion .heading {
+    margin-top: 20px;
+  }
+  
+  .c-product-info {
+    margin-top: 0px;
+  }
+  
+ .c-product-label-short__image{
+     margin-top: 10px;
+     margin-bottom:10px;
+ }
+/************************************************
+ ** materna: c3 Kuchendiagramm Kategorien ausblenden **
+ ************************************************/
+.c3[data-chart-type="PieChart"] .c3-custom-defocused  {
+  opacity: 0.2 !important;
+  pointer-events: none;
+}
+.c3[data-chart-type="PieChart"] .c3-custom-defocused.c3-focused  {
+  opacity: 1 !important;
+}
+/*****************************************************
+ ** materna: c-intro in Einzelansicht in den Vordergrund rücken **
+ *****************************************************/
+.s-richtext .c-intro  {
+  z-index: 0;
+}
+
+.c-intro {
+  z-index: 2;
+}
+
+.c-intro::before {
+  z-index: 3;   
+}
+
+.c-intro__content {
+  position: relative;
+  z-index: 4;
+}
+
+.c-intro__image-container {
+  z-index: 1;
+}
+
+.l-full-width {
+  z-index: 5;
+}
+
+a[id] {
+  scroll-margin-top: 140px;
+}
+
+.wrapperDivisions.header-placeholder {
+  padding-top: 268px;
+}
+
+* {
+ -moz-hyphens: none !important;
+  -ms-hyphens: none !important;
+  -webkit-hyphens: none !important;
+  hyphens: none !important;
+}
+.c-tabs {
+  margin: 50px 0;
+}
+.c-search-box-facets.c-search-box-facets--ersthelfer {
+  margin-top: 0;
+}
+.c-search-box__form[name="searchErsthelferKarte"] {
+  margin-bottom: 0;
+}
+.c-tabs .c-tabs__item:last-child {
+  border-bottom: 0;
+}
+
+/**** c-contact-table ****/
+
+.c-contact-table__list {
+     list-style-type: none;
+}
+ .c-contact-table__item {
+     margin-bottom: 20px;
+}
+ .c-contact-table__headline {
+     padding-right: 40px;
+}
+ .c-contact-table__headline p {
+     font-size: 1.8rem;
+     font-weight: bold;
+}
+ .c-contact-table__content {
+     background:#f1f2f3;
+     border-radius: 5px;
+     padding: 15px 20px;
+     position: relative;
+     height: 100%;
+}
+ .c-contact-table__icon {
+     position: absolute;
+     content: '';
+     display: block;
+     top: 18px;
+     right: 20px;
+     width: 20px;
+     height: 20px;
+}
+ .c-contact-table__icon img {
+     display: block;
+}
+ .c-contact-table__content > p:last-child {
+     margin-bottom: 0;
+}
+ .c-contact-table__content.is-beratung::before {
+     background:url(/SiteGlobals/Frontend/Images/icons/beratung.png?__blob=normal&v=2) no-repeat center;
+}
+ .c-contact-table__content.is-meldestelle::before {
+     background:url(/SiteGlobals/Frontend/Images/icons/meldestelle.png?__blob=normal&v=2) no-repeat center;
+}
+ .c-contact-table__content.is-selbsthilfe::before {
+     background:url(/SiteGlobals/Frontend/Images/icons/selbsthilfe.png?__blob=normal&v=2) no-repeat center;
+}
+ .c-contact-table__content.is-sicherheitsmeldung::before {
+     background:url(/SiteGlobals/Frontend/Images/icons/sicherheitsmeldung.png?__blob=normal&v=2) no-repeat center;
+}
+ @media print, screen and (min-width: 37.5em) {
+     .c-contact-table:not(.is-single-column) .c-contact-table__item:nth-child(odd) {
+         padding-right: 10px;
+    }
+     .c-contact-table:not(.is-single-column) .c-contact-table__item:nth-child(even) {
+         padding-left: 10px;
+    }
+}

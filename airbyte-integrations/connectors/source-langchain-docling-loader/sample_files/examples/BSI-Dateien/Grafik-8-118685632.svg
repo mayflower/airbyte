@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="74" height="74" version="1.1" viewBox="0 0 19.579 19.579" xmlns="http://www.w3.org/2000/svg">
+ <g transform="translate(0 -277.42)">
+  <circle cx="9.7896" cy="286.15" r="8.7312" fill="#e5eef8" stroke-width=".37042"/>
+ </g>
+ <g fill="none" stroke-linejoin="round">
+  <g stroke="#004f80">
+   <g>
+    <g stroke-linecap="round" stroke-width="1.2715">
+     <polyline class="st0" transform="matrix(.28704 0 0 .28709 -21.462 -16.195)" points="117.5 76.06 117.5 86.06 127.5 86.06"/>
+     <polyline class="st0" transform="matrix(.28704 0 0 .28709 -21.462 -16.195)" points="93.5 116.06 93.5 122.06 127.5 122.06 127.5 86.06 117.5 76.06 93.5 76.06 93.5 86.06"/>
+     <polyline class="st0" transform="matrix(.28704 0 0 .28709 -21.462 -16.195)" points="131.5 122.06 133.5 122.06 133.5 86.06 123.5 76.06"/>
+    </g>
+    <polyline class="st1" transform="matrix(.28704 0 0 .28709 -21.462 -16.195)" points="105.5 94.06 97.5 104.06 97.5 114.06 93.5 110.06 93.5 104.06 85.5 94.06" stroke-width="1.2715"/>
+    <path class="st1" d="m8.8207 10.808h-5.7407c-0.31574 0-0.57407-0.25838-0.57407-0.57418 0-0.3158 0.25833-0.57418 0.57407-0.57418h5.7407c0.31574 0 0.57407 0.25838 0.57407 0.57418 0 0.31867-0.25546 0.57418-0.57407 0.57418z" stroke-width=".365"/>
+   </g>
+   <g stroke-linecap="round" stroke-width=".365">
+    <line class="st2" x1="13.413" x2="9.9689" y1="11.382" y2="11.382" stroke-dasharray="1.09500001, 1.09500001"/>
+    <line class="st2" x1="10.543" x2="13.413" y1="10.234" y2="10.234" stroke-dasharray="0.73000001, 0.365"/>
+    <line class="st3" x1="8.8207" x2="13.413" y1="12.531" y2="12.531" stroke-dasharray="1.46000001, 1.46000001"/>
+    <line class="st4" x1="7.9596" x2="13.413" y1="13.679" y2="13.679" stroke-dasharray="1.46000001, 1.46000001"/>
+    <line class="st3" x1="7.6726" x2="13.413" y1="14.827" y2="14.827" stroke-dasharray="1.09500001, 1.09500001"/>
+   </g>
+  </g>
+  <line class="st4" x1="7.6726" x2="13.413" y1="15.976" y2="15.976" stroke="#03b8f2" stroke-dasharray="0.73000001, 1.46000001" stroke-linecap="round" stroke-width=".365"/>
+ </g>
+</svg>
