@@ -21,6 +21,7 @@ from airbyte_cdk.sources import AbstractSource
 from airbyte_cdk.sources.streams import CheckpointMixin, Stream
 from airbyte_cdk.sources.streams.core import StreamData
 
+from source_langchain_docling_loader.file_source import LocalFileSystemSource
 
 # Supported MIME types for DoclingLoader
 SUPPORTED_MIMETYPES = [
@@ -112,7 +113,8 @@ class DoclingStream(CheckpointMixin, Stream):
             chunker_tokenizer = EMBED_MODEL_ID
 
         self.logger.info(f"Using chunker tokenizer: {chunker_tokenizer}")
-        self.chunker = HybridChunker(tokenizer=chunker_tokenizer)
+        self.chunker = HybridChunker(tokenizer=chunker_tokenizer, max_tokens=100)
+        self.file_source = LocalFileSystemSource()
 
     @property
     def name(self) -> str:
@@ -139,56 +141,6 @@ class DoclingStream(CheckpointMixin, Stream):
         with open(schema_path, "r") as f:
             return dict(json.loads(f.read()))
 
-    def _get_file_id(self, file_path: str) -> str:
-        """
-        Generate a unique ID for a file based on its path and modification time
-        """
-        file_stats = os.stat(file_path)
-        unique_string = f"{file_path}_{file_stats.st_mtime}"
-        return hashlib.md5(unique_string.encode()).hexdigest()
-
-    def _is_supported_file(self, file_path: str) -> bool:
-        """
-        Check if the file has a supported MIME type or extension
-        """
-        mime_type, _ = mimetypes.guess_type(file_path)
-        if mime_type is None:
-            # If we can't determine the MIME type, check fallback based on extension
-            ext = os.path.splitext(file_path.lower())[1]
-            if ext in SUPPORTED_EXTENSIONS:
-                self.logger.warning(f"Could not determine MIME type for {file_path}, using extension-based fallback")
-                return True
-            return False
-
-        # Check if it's a supported MIME type
-        if mime_type in SUPPORTED_MIMETYPES:
-            return True
-
-        return False
-
-    def _scan_directory(self, directory_path: str) -> List[str]:
-        """
-        Recursively scan a directory for supported document files
-        """
-        supported_files = []
-        directory = Path(directory_path)
-
-        if not directory.exists() or not directory.is_dir():
-            self.logger.error(f"Directory not found or not a directory: {directory_path}")
-            return []
-
-        # Walk through the directory and all subdirectories
-        for root, _, files in os.walk(directory_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                # Check if the file has a supported MIME type
-                if self._is_supported_file(file_path):
-                    supported_files.append(file_path)
-                    self.logger.info(f"Found supported document: {file_path}")
-
-        self.logger.info(f"Found {len(supported_files)} supported documents in directory {directory_path}")
-        return supported_files
-
     def _get_all_files_to_process(self) -> List[Dict[str, str]]:
         """
         Process all paths and collect files to process.
@@ -205,7 +157,7 @@ class DoclingStream(CheckpointMixin, Stream):
 
             if os.path.isfile(path):
                 # For individual files, check if they're supported
-                if self._is_supported_file(path):
+                if _is_supported_file(path):
                     # For individual files, the base directory is the containing directory
                     files_to_process.append({"file_path": path, "base_dir": os.path.dirname(path)})
                     self.logger.info(f"Added individual file: {path}")
@@ -214,21 +166,15 @@ class DoclingStream(CheckpointMixin, Stream):
 
             elif os.path.isdir(path):
                 # For directories, scan recursively for supported files
-                found_files = self._scan_directory(path)
+                found_files = self.file_source.list_files(path)
                 # For directory scans, the base directory is the directory itself
                 for file_path in found_files:
-                    files_to_process.append({"file_path": file_path, "base_dir": path})
+                    if _is_supported_file(path):
+                        files_to_process.append({"file_path": file_path, "base_dir": path})
             else:
                 self.logger.warning(f"Skipping path of unknown type: {path}")
 
         return files_to_process
-
-    def _get_file_modified_time(self, file_path: str) -> datetime:
-        """
-        Get the last modified time of a file
-        """
-        file_stats = os.stat(file_path)
-        return datetime.fromtimestamp(file_stats.st_mtime)
 
     def _get_document_records(self, file_info: Dict[str, str], cursor_field: str = None, cursor_value: str = None) -> List[Dict[str, Any]]:
         """
@@ -239,8 +185,8 @@ class DoclingStream(CheckpointMixin, Stream):
         base_dir = file_info["base_dir"]
 
         try:
-            file_id = self._get_file_id(file_path)
-            file_modified_time = self._get_file_modified_time(file_path)
+            file_id = self.file_source.get_file_id(file_path)
+            file_modified_time = self.file_source.get_modified_time(file_path)
 
             # For incremental, skip files not modified since last sync
             if cursor_field and cursor_value:
@@ -471,3 +417,23 @@ class SourceLangchainDoclingLoader(AbstractSource):
 
         # Return the unified stream that handles both sync modes
         return [DoclingStream(paths=paths, export_type=export_type, chunker_tokenizer=chunker_tokenizer)]
+
+
+def _is_supported_file(file_path: str) -> bool:
+    """
+    Check if the file has a supported MIME type or extension
+    """
+    mime_type, _ = mimetypes.guess_type(file_path)
+    if mime_type is None:
+        # If we can't determine the MIME type, check fallback based on extension
+        ext = os.path.splitext(file_path.lower())[1]
+        if ext in SUPPORTED_EXTENSIONS:
+            logger.warning(f"Could not determine MIME type for {file_path}, using extension-based fallback")
+            return True
+        return False
+
+    # Check if it's a supported MIME type
+    if mime_type in SUPPORTED_MIMETYPES:
+        return True
+
+    return False
