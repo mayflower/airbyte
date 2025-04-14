@@ -17,9 +17,9 @@ from airbyte_cdk.models import (
     AirbyteStreamState,
     Type,
 )
-#from airbyte_cdk.sql.shared.catalog_providers import CatalogProvider
-from airbyte_protocol.models import ConfiguredAirbyteCatalog, ConfiguredAirbyteStream, DestinationSyncMode, SyncMode, \
-    AirbyteStream
+
+# from airbyte_cdk.sql.shared.catalog_providers import CatalogProvider
+from airbyte_protocol.models import ConfiguredAirbyteCatalog, ConfiguredAirbyteStream, DestinationSyncMode, SyncMode, AirbyteStream
 from sqlalchemy.dialects.mysql.pymysql import MySQLDialect_pymysql
 
 from destination_mariadb.common.catalog.catalog_providers import CatalogProvider
@@ -40,8 +40,7 @@ SQL_CREATE_STATEMENT = """
         )
         """
 
-SQL_DESTORY_STATEMENT = 'DROP TABLE IF EXISTS `users_123`'
-
+SQL_DESTORY_STATEMENT = "DROP TABLE IF EXISTS `users_123`"
 
 
 class TestDestinationMariaDB(unittest.TestCase):
@@ -61,13 +60,9 @@ class TestDestinationMariaDB(unittest.TestCase):
         self.config_model = ConfigModel.parse_obj(self.config)
         self.logger = logging.getLogger("airbyte")
 
-        self.test_splitter = ProcessingConfigModel(
-            chunk_size=666
-        )
+        self.test_splitter = ProcessingConfigModel(chunk_size=666)
 
-        self.fake_embedder = FakeEmbeddingConfigModel(
-            mode="fake"
-        )
+        self.fake_embedder = FakeEmbeddingConfigModel(mode="fake")
 
         # mocks testProcessor.get_sql_connection()
         self.get_sql_conn_mock = MagicMock()
@@ -79,11 +74,8 @@ class TestDestinationMariaDB(unittest.TestCase):
         self.get_sql_conn_mock.return_value.__enter__.return_value = self.sql_conn_mock_enter
 
         # we need a "dialect", must be instance of MySQLDialect_pymysql
-        dialect = MySQLDialect_pymysql(
-            is_mariadb = True
-        )
+        dialect = MySQLDialect_pymysql(is_mariadb=True)
         self.sql_conn_mock_enter.dialect = dialect
-
 
         # ok, we actually need a catalog provider
         self.configured_catalog = ConfiguredAirbyteCatalog(
@@ -93,40 +85,53 @@ class TestDestinationMariaDB(unittest.TestCase):
                     destination_sync_mode=DestinationSyncMode.overwrite,
                     generation_id=None,
                     minimum_generation_id=None,
-                    primary_key=[['id']],
+                    primary_key=[["id"]],
                     sync_id=None,
                     sync_mode=SyncMode.full_refresh,
                     stream=AirbyteStream(
-                        default_cursor_field=['updated_at'],
+                        default_cursor_field=["updated_at"],
                         is_resumable=True,
-                        name='users',
+                        name="users",
                         namespace=None,
                         source_defined_cursor=True,
-                        source_defined_primary_key=[['id']],
-                        supported_sync_modes=[
-                            SyncMode.full_refresh,
-                            SyncMode.incremental
-                        ],
+                        source_defined_primary_key=[["id"]],
+                        supported_sync_modes=[SyncMode.full_refresh, SyncMode.incremental],
                         json_schema={
-                            '$schema': 'http://json-schema.org/schema#', 'additionalProperties': True,
-                            'properties': {'academic_degree': {'type': 'string'}, 'address': {
-                                'properties': {'city': {'type': 'string'}, 'country_code': {'type': 'string'},
-                                               'postal_code': {'type': 'string'},
-                                               'province': {'type': 'string'}, 'state': {'type': 'string'},
-                                               'street_name': {'type': 'string'},
-                                               'street_number': {'type': 'string'}}, 'type': 'object'},
-                                           'age': {'type': 'integer'}, 'blood_type': {'type': 'string'},
-                                           'created_at': {'airbyte_type': 'timestamp_with_timezone',
-                                                          'format': 'date-time', 'type': 'string'},
-                                           'email': {'type': 'string'}, 'gender': {'type': 'string'},
-                                           'height': {'type': 'string'}, 'id': {'type': 'integer'},
-                                           'language': {'type': 'string'}, 'name': {'type': 'string'},
-                                           'nationality': {'type': 'string'}, 'occupation': {'type': 'string'},
-                                           'telephone': {'type': 'string'}, 'title': {'type': 'string'},
-                                           'updated_at': {'airbyte_type': 'timestamp_with_timezone',
-                                                          'format': 'date-time', 'type': 'string'},
-                                           'weight': {'type': 'integer'}}, 'type': 'object'}
-                    )
+                            "$schema": "http://json-schema.org/schema#",
+                            "additionalProperties": True,
+                            "properties": {
+                                "academic_degree": {"type": "string"},
+                                "address": {
+                                    "properties": {
+                                        "city": {"type": "string"},
+                                        "country_code": {"type": "string"},
+                                        "postal_code": {"type": "string"},
+                                        "province": {"type": "string"},
+                                        "state": {"type": "string"},
+                                        "street_name": {"type": "string"},
+                                        "street_number": {"type": "string"},
+                                    },
+                                    "type": "object",
+                                },
+                                "age": {"type": "integer"},
+                                "blood_type": {"type": "string"},
+                                "created_at": {"airbyte_type": "timestamp_with_timezone", "format": "date-time", "type": "string"},
+                                "email": {"type": "string"},
+                                "gender": {"type": "string"},
+                                "height": {"type": "string"},
+                                "id": {"type": "integer"},
+                                "language": {"type": "string"},
+                                "name": {"type": "string"},
+                                "nationality": {"type": "string"},
+                                "occupation": {"type": "string"},
+                                "telephone": {"type": "string"},
+                                "title": {"type": "string"},
+                                "updated_at": {"airbyte_type": "timestamp_with_timezone", "format": "date-time", "type": "string"},
+                                "weight": {"type": "integer"},
+                            },
+                            "type": "object",
+                        },
+                    ),
                 )
             ]
         )
@@ -142,43 +147,40 @@ class TestDestinationMariaDB(unittest.TestCase):
             type=Type.RECORD,
             record=AirbyteRecordMessage(
                 data={
-                    'academic_degree': 'Master',
-                    'address': {
-                        'city': 'Austin',
-                        'country_code': 'UG',
-                        'postal_code': '49893',
-                        'province': 'North Carolina',
-                        'state': 'Kentucky',
-                        'street_name': 'Princeton',
-                        'street_number': '789'
+                    "academic_degree": "Master",
+                    "address": {
+                        "city": "Austin",
+                        "country_code": "UG",
+                        "postal_code": "49893",
+                        "province": "North Carolina",
+                        "state": "Kentucky",
+                        "street_name": "Princeton",
+                        "street_number": "789",
                     },
-                    'age': 53,
-                    'blood_type': 'B−',
-                    'created_at': '2012-07-02T08:32:31+00:00',
-                    'email': 'reason1932+1@protonmail.com',
-                    'gender': 'Male',
-                    'height': '1.55',
-                    'id': 1,
-                    'language': 'Tamil',
-                    'name': 'Patria',
-                    'nationality': 'Italian',
-                    'occupation': 'Word Processing Operator',
-                    'telephone': '+1-(110)-795-7610',
-                    'title': 'M.A.',
-                    'updated_at': '2025-03-27T14:37:27+00:00',
-                    'weight': 58
+                    "age": 53,
+                    "blood_type": "B−",
+                    "created_at": "2012-07-02T08:32:31+00:00",
+                    "email": "reason1932+1@protonmail.com",
+                    "gender": "Male",
+                    "height": "1.55",
+                    "id": 1,
+                    "language": "Tamil",
+                    "name": "Patria",
+                    "nationality": "Italian",
+                    "occupation": "Word Processing Operator",
+                    "telephone": "+1-(110)-795-7610",
+                    "title": "M.A.",
+                    "updated_at": "2025-03-27T14:37:27+00:00",
+                    "weight": 58,
                 },
                 emitted_at=1743086247202,
                 meta=None,
                 namespace=None,
                 stream="users",
             ),
-
         )
 
-        self.input_messages = [
-            test_message
-        ]
+        self.input_messages = [test_message]
 
         self.sql_config = DatabaseConfig(
             host=self.config_model.indexing.host,
@@ -195,9 +197,6 @@ class TestDestinationMariaDB(unittest.TestCase):
             catalog_provider=CatalogProvider(self.configured_catalog),
         )
 
-
-
-
     @staticmethod
     def _multiline_trim(text):
         lines = text.split("\n")
@@ -213,7 +212,6 @@ class TestDestinationMariaDB(unittest.TestCase):
         self.assertMultiLineEqual(self._multiline_trim(expected), self._multiline_trim(actual), msg)
         pass
 
-
     @patch("sqlalchemy.inspect")
     def test_create_database(self, sqlalchemy_inspect):
         # TODO can we mock away the logger?
@@ -222,13 +220,10 @@ class TestDestinationMariaDB(unittest.TestCase):
 
         inspector_mock.get_schema_names = Mock(return_value=[])
 
-
-
         self.testProcessor._table_exists = MagicMock(return_value=False)
         self.testProcessor._execute_sql = MagicMock()
 
-
-        self.testProcessor._ensure_final_table_exists('users')
+        self.testProcessor._ensure_final_table_exists("users")
         actual_qry = self.testProcessor._execute_sql.call_args[0][0]
 
         expected_qry = """
@@ -242,39 +237,34 @@ class TestDestinationMariaDB(unittest.TestCase):
             )
         """
 
-
         self.assertMultilineTrimmed(actual_qry, expected_qry)
 
-
     def test_write_stragegy_append(self):
-
         # use the connection mock
         self.testProcessor.get_sql_connection = self.get_sql_conn_mock
-
 
         # make sure it doesn't attempt to create the tables again
         self.testProcessor._table_exists = Mock(return_value=True)
 
         # Process the message
         for _ in self.testProcessor.process_airbyte_messages_as_generator(
-                input_messages=self.input_messages,
-                write_strategy=WriteStrategy.APPEND,
+            input_messages=self.input_messages,
+            write_strategy=WriteStrategy.APPEND,
         ):
             pass
 
         # Test that the SQL statements are correct
         self.assertEqual(self.sql_conn_mock_enter.execute.call_count, 1)
 
-
         textclause = self.sql_conn_mock_enter.execute.call_args_list[0].args[0]
         binds = self.sql_conn_mock_enter.execute.call_args_list[0].args[1]
 
         # should we compare the binds? probably not entirely, just that all the keys are present
-        self.assertIn('document_id_val', binds)
-        self.assertIn('chunk_id_val', binds)
-        self.assertIn('metadata_val', binds)
-        self.assertIn('document_content_val', binds)
-        self.assertIn('embedding_val', binds)
+        self.assertIn("document_id_val", binds)
+        self.assertIn("chunk_id_val", binds)
+        self.assertIn("metadata_val", binds)
+        self.assertIn("document_content_val", binds)
+        self.assertIn("embedding_val", binds)
 
         sql_actual = str(textclause)
 
@@ -292,18 +282,16 @@ class TestDestinationMariaDB(unittest.TestCase):
         self.assertMultilineTrimmed(sql_expected, sql_actual)
 
     def test_write_stragegy_merge(self):
-
         # use the connection mock
         self.testProcessor.get_sql_connection = self.get_sql_conn_mock
-
 
         # make sure it doesn't attempt to create the tables again
         self.testProcessor._table_exists = Mock(return_value=True)
 
         # Process the message
         for _ in self.testProcessor.process_airbyte_messages_as_generator(
-                input_messages=self.input_messages,
-                write_strategy=WriteStrategy.MERGE,
+            input_messages=self.input_messages,
+            write_strategy=WriteStrategy.MERGE,
         ):
             pass
 
@@ -318,17 +306,16 @@ class TestDestinationMariaDB(unittest.TestCase):
         """
         self.assertMultilineTrimmed(sql_expected, str(textclause_delete))
 
-
         # second call, insert
         textclause = self.sql_conn_mock_enter.execute.call_args_list[1].args[0]
         binds = self.sql_conn_mock_enter.execute.call_args_list[1].args[1]
 
         # should we compare the binds? probably not entirely, just that all the keys are present
-        self.assertIn('document_id_val', binds)
-        self.assertIn('chunk_id_val', binds)
-        self.assertIn('metadata_val', binds)
-        self.assertIn('document_content_val', binds)
-        self.assertIn('embedding_val', binds)
+        self.assertIn("document_id_val", binds)
+        self.assertIn("chunk_id_val", binds)
+        self.assertIn("metadata_val", binds)
+        self.assertIn("document_content_val", binds)
+        self.assertIn("embedding_val", binds)
 
         sql_actual = str(textclause)
 
@@ -345,12 +332,9 @@ class TestDestinationMariaDB(unittest.TestCase):
 
         self.assertMultilineTrimmed(sql_expected, sql_actual)
 
-
     def test_write_stragegy_replace(self):
-
         # use the connection mock
         self.testProcessor.get_sql_connection = self.get_sql_conn_mock
-
 
         # make sure it doesn't attempt to create the tables again
         self.testProcessor._table_exists = Mock(return_value=True)
@@ -366,8 +350,8 @@ class TestDestinationMariaDB(unittest.TestCase):
 
         # Process the message
         for _ in self.testProcessor.process_airbyte_messages_as_generator(
-                input_messages=self.input_messages,
-                write_strategy=WriteStrategy.REPLACE,
+            input_messages=self.input_messages,
+            write_strategy=WriteStrategy.REPLACE,
         ):
             pass
 

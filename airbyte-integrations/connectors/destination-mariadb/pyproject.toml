@@ -38,7 +38,7 @@ pytest-mock = "^3.6"
 freezegun = "^1.4.0"
 pytest = "^8.0.0"
 requests-mock = "^1.9.3"
-
+ruff = "*"
 
 
 [tool.poetry.scripts]

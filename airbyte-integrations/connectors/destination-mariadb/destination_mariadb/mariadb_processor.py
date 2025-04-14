@@ -25,7 +25,8 @@ from airbyte_protocol.models import (
 
 from airbyte_cdk.destinations.vector_db_based import embedder
 from airbyte_cdk.destinations.vector_db_based.document_processor import (
-    DocumentProcessor as DocumentSplitter, Chunk,
+    DocumentProcessor as DocumentSplitter,
+    Chunk,
 )
 from airbyte_cdk.destinations.vector_db_based.document_processor import (
     ProcessingConfigModel as DocumentSplitterConfig,
@@ -59,7 +60,6 @@ from sqlalchemy import text
 from sqlalchemy.sql.elements import TextClause
 
 
-
 from collections.abc import Generator
 from airbyte_cdk.models import AirbyteRecordMessage
 from sqlalchemy.engine import Engine
@@ -73,7 +73,9 @@ from sqlalchemy import create_engine
 from pydantic import BaseModel
 
 import logging
+
 logger = logging.getLogger("airbyte")
+
 
 class SQLRuntimeError(Exception):
     """Raised when an SQL operation fails."""
@@ -87,8 +89,6 @@ class DatabaseConfig(BaseModel, abc.ABC):
     password: SecretString | str
     table_prefix: Optional[str] = ""
 
-
-
     def get_sql_alchemy_url(self) -> SecretString:
         """Return the SQLAlchemy URL to use."""
 
@@ -96,15 +96,11 @@ class DatabaseConfig(BaseModel, abc.ABC):
         # conn_str = f"mariadb+mariadbconnector://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}"
         conn_str = f"mysql+pymysql://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}"
 
-        return SecretString(
-            conn_str
-        )
-
+        return SecretString(conn_str)
 
     def get_database_name(self) -> str:
         """Return the name of the database."""
         return self.database
-
 
     def connect(self) -> None:
         """Attempt to connect, and raise `AirbyteConnectionError` if the connection fails."""
@@ -132,10 +128,7 @@ class DatabaseConfig(BaseModel, abc.ABC):
 
         Raises `NotImplementedError` if a custom vendor client is not defined.
         """
-        raise NotImplementedError(
-            f"The type '{type(self).__name__}' does not define a custom client."
-        )
-
+        raise NotImplementedError(f"The type '{type(self).__name__}' does not define a custom client.")
 
 
 class EmbeddingConfig(Protocol):
@@ -146,7 +139,6 @@ class EmbeddingConfig(Protocol):
     """
 
     mode: str
-
 
 
 class MariaDBProcessor(abc.ABC):
@@ -170,17 +162,14 @@ class MariaDBProcessor(abc.ABC):
     normalizer = LowerCaseNormalizer
     """The name normalizer to user for table and column name normalization."""
 
-
     """The file writer class to use for writing files to the cache."""
 
-
-
     def __init__(
-            self,
-            sql_config: DatabaseConfig,
-            splitter_config: DocumentSplitterConfig,
-            embedder_config: EmbeddingConfig,
-            catalog_provider: CatalogProvider,
+        self,
+        sql_config: DatabaseConfig,
+        splitter_config: DocumentSplitterConfig,
+        embedder_config: EmbeddingConfig,
+        catalog_provider: CatalogProvider,
     ) -> None:
         """Initialize the MariaDB processor."""
         self.temp_tables = {}
@@ -188,16 +177,14 @@ class MariaDBProcessor(abc.ABC):
         self.embedder_config = embedder_config
 
         self._sql_config: DatabaseConfig = sql_config
-        self._catalog_provider: CatalogProvider | None = catalog_provider # move up
+        self._catalog_provider: CatalogProvider | None = catalog_provider  # move up
 
         self.type_converter = self.type_converter_class()
         self._cached_table_definitions: dict[str, sqlalchemy.Table] = {}
 
-
-
     def _get_sql_column_definitions(
-            self,
-            stream_name: str,
+        self,
+        stream_name: str,
     ) -> dict[str, sqlalchemy.types.TypeEngine]:
         """
         Return the column definitions for the given stream.
@@ -211,29 +198,24 @@ class MariaDBProcessor(abc.ABC):
             CHUNK_ID_COLUMN: sqlalchemy.types.VARCHAR(length=255),
             METADATA_COLUMN: self.type_converter_class.get_json_type(),
             DOCUMENT_CONTENT_COLUMN: sqlalchemy.types.TEXT(),
-            EMBEDDING_COLUMN: VECTOR(self.embedding_dimensions)  # Vector(self.embedding_dimensions),
+            EMBEDDING_COLUMN: VECTOR(self.embedding_dimensions),  # Vector(self.embedding_dimensions),
         }
 
-
     def _fully_qualified(
-            self,
-            table_name: str,
+        self,
+        table_name: str,
     ) -> str:
         """Return the fully qualified name of the given table."""
         return f"{self._quote_identifier(table_name)}"
 
-
-    #yes
+    # yes
     @staticmethod
     def _get_placeholder_name(identifier: str) -> str:
-        return f'{identifier}_val'
-
+        return f"{identifier}_val"
 
     def _quote_identifier(self, identifier: str) -> str:
         """Return the given identifier, quoted."""
-        return f'`{identifier}`'
-
-
+        return f"`{identifier}`"
 
     @property
     def embedder(self) -> embedder.Embedder:
@@ -254,7 +236,6 @@ class MariaDBProcessor(abc.ABC):
             catalog=self.catalog_provider.configured_catalog,
         )
 
-
     def _create_document_id(self, record_msg: AirbyteRecordMessage) -> str:
         """Create document id based on the primary key values. Returns a random uuid if no primary key is found"""
         stream_name = record_msg.stream
@@ -262,7 +243,6 @@ class MariaDBProcessor(abc.ABC):
         if primary_key is not None:
             return f"Stream_{stream_name}_Key_{primary_key}"
         return str(uuid.uuid4().int)
-
 
     def _get_record_primary_key(self, record_msg: AirbyteRecordMessage) -> str | None:
         """Create primary key for the record by appending the primary keys."""
@@ -282,7 +262,6 @@ class MariaDBProcessor(abc.ABC):
         stringified_primary_key = "_".join(primary_key)
         return stringified_primary_key
 
-
     def _get_primary_keys(
         self,
         stream_name: str,
@@ -299,11 +278,7 @@ class MariaDBProcessor(abc.ABC):
 
         return joined_pks
 
-
-    def get_writing_strategy(
-            self,
-            stream_name
-    ):
+    def get_writing_strategy(self, stream_name):
         sync_mode = self.catalog_provider.get_configured_stream_info(stream_name).destination_sync_mode
 
         if sync_mode == DestinationSyncMode.overwrite:
@@ -315,22 +290,14 @@ class MariaDBProcessor(abc.ABC):
 
         return WriteStrategy.APPEND
 
-
-    #yes
-    def insert_airbyte_message(
-            self,
-            stream_name: str,
-            table_name: str,
-            input_message: AirbyteRecordMessage,
-            merge: bool
-    ):
+    # yes
+    def insert_airbyte_message(self, stream_name: str, table_name: str, input_message: AirbyteRecordMessage, merge: bool):
         column_defs = self._get_sql_column_definitions(stream_name)
         nl = "\n"
         column_names = []
         column_values = []
 
         with self.get_sql_connection() as conn:
-
             dialect = conn.dialect
 
             for col_name in column_defs:
@@ -341,9 +308,9 @@ class MariaDBProcessor(abc.ABC):
                 # hack. not sure how to do this properly rn. might need proper usage of sqlalchemy.
 
                 if isinstance(col_def, VECTOR):
-                    column_values.append('Vec_FromText(:'+self._get_placeholder_name(col_name)+')')
+                    column_values.append("Vec_FromText(:" + self._get_placeholder_name(col_name) + ")")
                 else:
-                    column_values.append(':'+self._get_placeholder_name(col_name))
+                    column_values.append(":" + self._get_placeholder_name(col_name))
 
             query = f"""
                 INSERT INTO {self._fully_qualified(table_name)}
@@ -365,12 +332,7 @@ class MariaDBProcessor(abc.ABC):
                     WHERE {DOCUMENT_ID_COLUMN} = :document_id_val
                 """)
 
-                delete_statement = delete_statement.bindparams(
-                    document_id_val=document_id
-                )
-
-
-
+                delete_statement = delete_statement.bindparams(document_id_val=document_id)
 
             document_chunks, _ = self.splitter.process(input_message)
 
@@ -378,10 +340,7 @@ class MariaDBProcessor(abc.ABC):
                 documents=self.chunks_to_documents(document_chunks),
             )
 
-
-
             for i, chunk in enumerate(document_chunks, start=0):
-
                 new_data: dict[str, Any] = {
                     self._get_placeholder_name(DOCUMENT_ID_COLUMN): document_id,
                     self._get_placeholder_name(CHUNK_ID_COLUMN): str(uuid.uuid4().int),
@@ -408,17 +367,17 @@ class MariaDBProcessor(abc.ABC):
 
                 conn.execute(text(query), new_data)
 
-
     def chunks_to_documents(self, chunks: list[Chunk]) -> list[Document]:
         result = []
         for chunk in chunks:
-            result.append(Document(
-                page_content = chunk.page_content,
-                record = chunk.record,
-            ))
+            result.append(
+                Document(
+                    page_content=chunk.page_content,
+                    record=chunk.record,
+                )
+            )
             pass
         return result
-
 
     def _ensure_temp_table(self, stream_name):
         """
@@ -431,17 +390,11 @@ class MariaDBProcessor(abc.ABC):
         self.temp_tables[stream_name] = temp_table_name
         return temp_table_name
 
-
     def _finalize_temp_tables(self):
         for stream_name, temp_table in self.temp_tables.items():
             final_table_name = self.get_sql_table_name(stream_name)
-            self._swap_temp_table_with_final_table(
-                stream_name=stream_name,
-                temp_table_name=temp_table,
-                final_table_name=final_table_name
-            )
+            self._swap_temp_table_with_final_table(stream_name=stream_name, temp_table_name=temp_table, final_table_name=final_table_name)
         pass
-
 
     def _get_tables_list(
         self,
@@ -451,12 +404,10 @@ class MariaDBProcessor(abc.ABC):
             inspector: Inspector = sqlalchemy.inspect(conn)
             return inspector.get_table_names()  # type: ignore
 
-
-
     def process_airbyte_record_message(
-            self,
-            message: AirbyteRecordMessage,
-            write_strategy: WriteStrategy,
+        self,
+        message: AirbyteRecordMessage,
+        write_strategy: WriteStrategy,
     ):
         stream_name = message.stream
 
@@ -475,7 +426,6 @@ class MariaDBProcessor(abc.ABC):
             #  _finalize_writing should then swap the tables back
             return
 
-
         if write_strategy == WriteStrategy.MERGE:
             # do the processing with merging
             self.insert_airbyte_message(stream_name, real_table_name, message, True)
@@ -486,16 +436,13 @@ class MariaDBProcessor(abc.ABC):
             self.insert_airbyte_message(stream_name, real_table_name, message, False)
             return
 
-
     def _finalize_writing(self):
         self._finalize_temp_tables()
 
-
-
     def process_airbyte_messages_as_generator(
-            self,
-            input_messages: Iterable[AirbyteMessage],
-            write_strategy: WriteStrategy,
+        self,
+        input_messages: Iterable[AirbyteMessage],
+        write_strategy: WriteStrategy,
     ):
         # ok, so:
         # - for APPEND, we're just going to iterate and append
@@ -526,7 +473,7 @@ class MariaDBProcessor(abc.ABC):
                 # writing shit at the wall and seeing what sticks at this point
 
                 # yielding state messages as-is seems to be correct
-                #yield message
+                # yield message
                 queued_messages.append(message)
             else:
                 pass
@@ -535,9 +482,6 @@ class MariaDBProcessor(abc.ABC):
         self._finalize_writing()
 
         yield from queued_messages
-
-
-
 
     @property
     def catalog_provider(
@@ -558,17 +502,13 @@ class MariaDBProcessor(abc.ABC):
 
         return self._catalog_provider
 
-
-
     @property
     def sql_config(self) -> DatabaseConfig:
         return self._sql_config
 
-
     def get_sql_engine(self) -> Engine:
         """Return a new SQL engine to use."""
         return self.sql_config.get_sql_engine()
-
 
     @contextmanager
     def get_sql_connection(self) -> Generator[sqlalchemy.engine.Connection, None, None]:
@@ -582,7 +522,6 @@ class MariaDBProcessor(abc.ABC):
         connection.close()
         del connection
 
-
     def get_sql_table_name(
         self,
         stream_name: str,
@@ -590,11 +529,9 @@ class MariaDBProcessor(abc.ABC):
         """Return the name of the SQL table for the given stream."""
         table_prefix = self.sql_config.table_prefix
 
-
         return self.normalizer.normalize(
             f"{table_prefix}{stream_name}",
         )
-
 
     def _get_temp_table_name(
         self,
@@ -644,7 +581,6 @@ class MariaDBProcessor(abc.ABC):
 
         return table_name
 
-
     def _create_table(
         self,
         table_name: str,
@@ -661,7 +597,6 @@ class MariaDBProcessor(abc.ABC):
         )
         """
         _ = self._execute_sql(cmd)
-
 
     def _execute_sql(self, sql: str | TextClause | Executable) -> CursorResult:
         """Execute the given SQL statement."""
@@ -702,11 +637,13 @@ class MariaDBProcessor(abc.ABC):
 
         _ = stream_name
         deletion_name = f"{final_table_name}_deleteme"
-        commands = "\n".join([
-            f"ALTER TABLE {self._fully_qualified(final_table_name)} RENAME TO {deletion_name};",
-            f"ALTER TABLE {self._fully_qualified(temp_table_name)} RENAME TO {final_table_name};",
-            f"DROP TABLE {self._fully_qualified(deletion_name)};",
-        ])
+        commands = "\n".join(
+            [
+                f"ALTER TABLE {self._fully_qualified(final_table_name)} RENAME TO {deletion_name};",
+                f"ALTER TABLE {self._fully_qualified(temp_table_name)} RENAME TO {final_table_name};",
+                f"DROP TABLE {self._fully_qualified(deletion_name)};",
+            ]
+        )
         self._execute_sql(commands)
 
     def _table_exists(

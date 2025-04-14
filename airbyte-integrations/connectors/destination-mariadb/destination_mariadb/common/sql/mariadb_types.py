@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql.base import ischema_names
 from sqlalchemy.sql.type_api import TypeEngine
 from sqlalchemy.types import UserDefinedType, Float, String
 
+
 # this is for airbyte's column definition
 class VECTOR(UserDefinedType):
     cache_ok = True
@@ -14,8 +15,8 @@ class VECTOR(UserDefinedType):
 
     def get_col_spec(self, **kw):
         if self.dim is None:
-            return 'VECTOR'
-        return 'VECTOR(%d)' % self.dim
+            return "VECTOR"
+        return "VECTOR(%d)" % self.dim
 
     # the "bind_processor" is for converting the value into something which can be used with parameter binding.
     # That is, if there is a placeholder ":vec" in the query, the result of this processor would be the value being bound to "vec"
@@ -28,7 +29,6 @@ class VECTOR(UserDefinedType):
 
         return process
 
-
     def _to_db(self, value):
         if value is None:
             return value
@@ -37,9 +37,9 @@ class VECTOR(UserDefinedType):
             value = [value]
 
         if len(value) != self.dim:
-            raise ValueError('expected %d dimensions, not %d' % (self.dim, len(value)))
+            raise ValueError("expected %d dimensions, not %d" % (self.dim, len(value)))
 
-        return '[' + ','.join([str(float(v)) for v in value]) + ']'
+        return "[" + ",".join([str(float(v)) for v in value]) + "]"
 
     @classmethod
     def _from_db(cls, value):
@@ -47,11 +47,11 @@ class VECTOR(UserDefinedType):
             return value
 
         # first, text to array
-        as_array = [float(v) for v in value[1:-1].split(',')]
+        as_array = [float(v) for v in value[1:-1].split(",")]
 
         # then, this array to numpy array?
-        if not isinstance(as_array, np.ndarray) or as_array.dtype != '>f4':
-            as_array = np.asarray(value, dtype='>f4')
+        if not isinstance(as_array, np.ndarray) or as_array.dtype != ">f4":
+            as_array = np.asarray(value, dtype=">f4")
 
         # finally, whatever this does
         return as_array.astype(np.float32)
@@ -75,24 +75,25 @@ class VECTOR(UserDefinedType):
     def result_processor(self, dialect, coltype):
         def process(value):
             return self._from_db(value)
+
         return process
 
     class ComparatorFactory(TypeEngine.Comparator):
         # stolen from pgvector, I don't know if these are correct...
         def l2_distance(self, other):
-            return self.op('<->', return_type=Float)(other)
+            return self.op("<->", return_type=Float)(other)
 
         def max_inner_product(self, other):
-            return self.op('<#>', return_type=Float)(other)
+            return self.op("<#>", return_type=Float)(other)
 
         def cosine_distance(self, other):
-            return self.op('<=>', return_type=Float)(other)
+            return self.op("<=>", return_type=Float)(other)
 
         def l1_distance(self, other):
-            return self.op('<+>', return_type=Float)(other)
+            return self.op("<+>", return_type=Float)(other)
 
     comparator_factory = ComparatorFactory
 
 
 # for reflection.. what does this mean? But might be important for the whole SQL generation stuff
-ischema_names['vector'] = VECTOR
+ischema_names["vector"] = VECTOR
