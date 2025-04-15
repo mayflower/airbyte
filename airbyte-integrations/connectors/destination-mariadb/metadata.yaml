@@ -20,7 +20,6 @@ data:
   license: MIT
   name: MariaDB
 
-
   supportLevel: community
   tags:
     - language:python

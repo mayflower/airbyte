@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+
 DOCUMENT_ID_COLUMN = "document_id"
 CHUNK_ID_COLUMN = "chunk_id"
 METADATA_COLUMN = "metadata"

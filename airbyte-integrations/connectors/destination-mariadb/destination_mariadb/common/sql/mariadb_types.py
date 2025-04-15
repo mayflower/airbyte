@@ -1,7 +1,7 @@
 import numpy as np
 from sqlalchemy.dialects.postgresql.base import ischema_names
 from sqlalchemy.sql.type_api import TypeEngine
-from sqlalchemy.types import UserDefinedType, Float, String
+from sqlalchemy.types import Float, String, UserDefinedType
 
 
 # this is for airbyte's column definition

@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, final
 from airbyte import exceptions as exc
 from airbyte_cdk.models import DestinationSyncMode
 
+
 if TYPE_CHECKING:
     from airbyte_cdk.models import ConfiguredAirbyteCatalog, ConfiguredAirbyteStream
 

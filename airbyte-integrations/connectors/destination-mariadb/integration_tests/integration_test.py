@@ -8,10 +8,10 @@ import logging
 from typing import Any
 
 import psycopg2
+from destination_mariadb.destination import DestinationMariaDB
+
 from airbyte_cdk.destinations.vector_db_based.test_utils import BaseIntegrationTest
 from airbyte_cdk.models import DestinationSyncMode, Status
-
-from destination_mariadb.destination import DestinationMariaDB
 
 
 class MariaDBIntegrationTest(BaseIntegrationTest):

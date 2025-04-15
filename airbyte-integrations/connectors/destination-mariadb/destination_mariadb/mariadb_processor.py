@@ -5,38 +5,53 @@ Mostly based on the default PGVector connector...
 
 from __future__ import annotations
 
+import abc
 import json
+import logging
 import uuid
-from typing import Callable
-from typing import Any, Iterable
-from typing import Optional
+from collections.abc import Generator
+from contextlib import contextmanager
+from typing import Any, Callable, Iterable, Optional, cast
 
 import dpath
+import sqlalchemy
+import ulid
+from pydantic import BaseModel
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine
+from sqlalchemy.engine.cursor import CursorResult
+from sqlalchemy.engine.reflection import Inspector
+from sqlalchemy.sql.base import Executable
+from sqlalchemy.sql.elements import TextClause
+from typing_extensions import Protocol
 
-
+from airbyte import exceptions as exc
+from airbyte._util.name_normalizers import LowerCaseNormalizer
+from airbyte.constants import DEBUG_MODE
 from airbyte.secrets import SecretString
-from airbyte_cdk.destinations.vector_db_based.embedder import Document
-from airbyte_cdk.models import (
-    Type,
-)
-from airbyte_protocol.models import (
-    AirbyteMessage,
-)
-
+from airbyte.strategies import WriteStrategy
+from airbyte.types import SQLTypeConverter
 from airbyte_cdk.destinations.vector_db_based import embedder
 from airbyte_cdk.destinations.vector_db_based.document_processor import (
-    DocumentProcessor as DocumentSplitter,
     Chunk,
+)
+from airbyte_cdk.destinations.vector_db_based.document_processor import (
+    DocumentProcessor as DocumentSplitter,
 )
 from airbyte_cdk.destinations.vector_db_based.document_processor import (
     ProcessingConfigModel as DocumentSplitterConfig,
 )
-
-from typing_extensions import Protocol
-
+from airbyte_cdk.destinations.vector_db_based.embedder import Document
+from airbyte_cdk.models import (
+    AirbyteRecordMessage,
+    Type,
+)
+from airbyte_cdk.models.airbyte_protocol import DestinationSyncMode
+from airbyte_protocol.models import (
+    AirbyteMessage,
+)
+from destination_mariadb.common.catalog.catalog_providers import CatalogProvider
 from destination_mariadb.common.sql.mariadb_types import VECTOR
-
-
 from destination_mariadb.globals import (
     CHUNK_ID_COLUMN,
     DOCUMENT_CONTENT_COLUMN,
@@ -44,35 +59,7 @@ from destination_mariadb.globals import (
     EMBEDDING_COLUMN,
     METADATA_COLUMN,
 )
-import abc
 
-from contextlib import contextmanager
-from typing import cast
-
-import sqlalchemy
-import ulid
-from airbyte import exceptions as exc
-from airbyte._util.name_normalizers import LowerCaseNormalizer
-from airbyte.strategies import WriteStrategy
-from airbyte.types import SQLTypeConverter
-from airbyte_cdk.models.airbyte_protocol import DestinationSyncMode
-from sqlalchemy import text
-from sqlalchemy.sql.elements import TextClause
-
-
-from collections.abc import Generator
-from airbyte_cdk.models import AirbyteRecordMessage
-from sqlalchemy.engine import Engine
-from sqlalchemy.engine.cursor import CursorResult
-from sqlalchemy.engine.reflection import Inspector
-from sqlalchemy.sql.base import Executable
-
-from destination_mariadb.common.catalog.catalog_providers import CatalogProvider
-from airbyte.constants import DEBUG_MODE
-from sqlalchemy import create_engine
-from pydantic import BaseModel
-
-import logging
 
 logger = logging.getLogger("airbyte")
 

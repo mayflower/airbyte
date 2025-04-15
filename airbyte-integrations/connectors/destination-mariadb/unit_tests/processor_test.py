@@ -1,34 +1,34 @@
 import logging
 import typing
 import unittest
+from pathlib import Path
 from textwrap import dedent
 from unittest.mock import MagicMock, Mock, patch
 
 import pydantic
+from destination_mariadb.common.catalog.catalog_providers import CatalogProvider
+from destination_mariadb.config import ConfigModel
+from destination_mariadb.mariadb_processor import DatabaseConfig, MariaDBProcessor
+from sqlalchemy.dialects.mysql.pymysql import MySQLDialect_pymysql
+
 from airbyte._batch_handles import BatchHandle
+from airbyte.secrets import SecretString
 from airbyte.strategies import WriteStrategy
-from airbyte_cdk.destinations.vector_db_based import ProcessingConfigModel
-from airbyte_cdk.models import ConnectorSpecification, Status
+from airbyte_cdk.destinations.vector_db_based import FakeEmbeddingConfigModel, ProcessingConfigModel
 from airbyte_cdk.models import (
     AirbyteMessage,
     AirbyteRecordMessage,
     AirbyteStateMessage,
     AirbyteStateType,
     AirbyteStreamState,
+    ConnectorSpecification,
+    Status,
     Type,
 )
 
 # from airbyte_cdk.sql.shared.catalog_providers import CatalogProvider
-from airbyte_protocol.models import ConfiguredAirbyteCatalog, ConfiguredAirbyteStream, DestinationSyncMode, SyncMode, AirbyteStream
-from sqlalchemy.dialects.mysql.pymysql import MySQLDialect_pymysql
+from airbyte_protocol.models import AirbyteStream, ConfiguredAirbyteCatalog, ConfiguredAirbyteStream, DestinationSyncMode, SyncMode
 
-from destination_mariadb.common.catalog.catalog_providers import CatalogProvider
-from destination_mariadb.config import ConfigModel
-from destination_mariadb.mariadb_processor import DatabaseConfig
-from destination_mariadb.mariadb_processor import MariaDBProcessor
-from airbyte_cdk.destinations.vector_db_based import FakeEmbeddingConfigModel
-from pathlib import Path
-from airbyte.secrets import SecretString
 
 SQL_CREATE_STATEMENT = """
         CREATE TABLE `users_123` (

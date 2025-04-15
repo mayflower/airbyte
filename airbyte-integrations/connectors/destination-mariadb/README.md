@@ -1,7 +1,6 @@
-# TODO
+# Readme
 
-Installieren: libmariadb-dev und python3.10-dev
-(oder vielleicht nicht, TODO)
+## Installieren:
 
 - Venv mit Python 3.11 anlegen
 - poetry install --with dev
@@ -10,4 +9,9 @@ Installieren: libmariadb-dev und python3.10-dev
 
 - Pathmapping:
   - <your path>/airbyte/airbyte-integrations/connectors/destination-mariadb/.venv/lib/python3.11 -> /usr/local/lib/python3.11
+
+
+## Pre-commit ausführen
+Das sollte das "pre-commit" Tool ausführen, und dadurch 
+`pre-commit run -o HEAD -s origin/master`
 

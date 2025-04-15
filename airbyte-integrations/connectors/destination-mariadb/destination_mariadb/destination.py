@@ -1,3 +1,4 @@
+import logging
 from logging import Logger
 from typing import Any, Iterable, Mapping, Optional
 
@@ -13,7 +14,6 @@ from airbyte_cdk.models import (
     Status,
 )
 
-import logging
 
 logger = logging.getLogger("airbyte")
 
@@ -62,9 +62,8 @@ class DestinationMariaDB(Destination):
         logger.info("After this, I should terminate")
 
     def check(self, check_logger: Logger, config: Mapping[str, Any]) -> AirbyteConnectionStatus:
-        import pydevd_pycharm
-
-        pydevd_pycharm.settrace("192.168.178.27", port=55507, stdoutToServer=True, stderrToServer=True)
+        # import pydevd_pycharm
+        # pydevd_pycharm.settrace("192.168.178.27", port=55507, stdoutToServer=True, stderrToServer=True)
 
         try:
             parsed_config = ConfigModel.parse_obj(config)
