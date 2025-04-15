@@ -15,3 +15,11 @@
 Das sollte das "pre-commit" Tool ausführen, und dadurch 
 `pre-commit run -o HEAD -s origin/master`
 
+
+## ins Repo Pushen
+
+Taggen:
+`docker tag airbyte/destination-mariadb:dev  registry.data.mayflower.zone/airbyte/destination-mariadb:dev`
+
+Pushen:
+`docker push registry.data.mayflower.zone/airbyte/destination-mariadb:dev`
