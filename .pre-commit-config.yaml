@@ -44,6 +44,13 @@ repos:
 
   - repo: local
     hooks:
+      - id: addlicense
+        name: Add license headers
+        entry: addlicense -c "Airbyte, Inc." -l apache -v -f LICENSE_SHORT
+        language: golang
+        additional_dependencies: [github.com/google/addlicense@v1.1.1]
+        files: \.(java|kt|py)$
+
       - id: spotless
         name: Format Java files with Spotless
         entry: bash -c 'command -v mvn >/dev/null 2>&1 || { echo "Maven not installed. Install with brew install maven" >&2; exit 1; }; mvn -f spotless-maven-pom.xml spotless:apply'

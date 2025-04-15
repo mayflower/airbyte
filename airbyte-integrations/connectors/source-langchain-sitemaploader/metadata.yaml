@@ -1,0 +1,34 @@
+data:
+  allowedHosts:
+    hosts: [] # all hosts can be indexed.
+  registries:
+    oss:
+      enabled: true
+    cloud:
+      enabled: false
+  remoteRegistries:
+    pypi:
+      enabled: true
+      packageName: airbyte-source-langchain-sitemaploader
+  connectorBuildOptions:
+    baseImage: docker.io/airbyte/python-connector-base:3.0.0@sha256:1a0845ff2b30eafa793c6eee4e8f4283c2e52e1bbd44eed6cb9e9abd5d34d844
+  connectorSubtype: api
+  connectorType: source
+  dockerImageTag: dev-8
+  dockerRepository: mayflowergmbh/source-langchain-sitemaploader
+  githubIssueLabel: source-langchain-sitemaploader
+  icon: icon.svg
+  license: MIT
+  name: Langchain Sitemaploader
+  releaseDate: "2025-02-15"
+  releaseStage: alpha
+  supportLevel: community
+  documentationUrl: https://docs.airbyte.com/integrations/sources/langchain-sitemaploader
+  description: "A Python-based source connector that extracts and indexes website data using a LangChain-powered sitemap loader."
+  maintainer: johann-peter.hartmann@mayflower.de
+  tags:
+  - language:python
+  - connector:source
+  - category:sitemap
+  - integration:langchain
+metadataSpecVersion: "1.0"
