@@ -56,9 +56,9 @@ class MariaDBIndexingModel(BaseModel):
     credentials: PasswordBasedAuthorizationModel
 
     class Config:
-        title = "Postgres Connection"
+        title = "MariaDB Connection"
         schema_extra = {
-            "description": "Postgres can be used to store vector data and retrieve embeddings.",
+            "description": "MariaDB can be used to store vector data and retrieve embeddings.",
             "group": "indexing",
         }
 
