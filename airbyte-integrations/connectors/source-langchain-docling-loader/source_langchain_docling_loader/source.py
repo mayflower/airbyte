@@ -21,7 +21,7 @@ from airbyte_cdk.sources import AbstractSource
 from airbyte_cdk.sources.streams import CheckpointMixin, Stream
 from airbyte_cdk.sources.streams.core import StreamData
 
-from source_langchain_docling_loader.file_source import LocalFileSystemSource
+from source_langchain_docling_loader.file_source import LocalFileSystemSource, SharepointConfig
 
 # Supported MIME types for DoclingLoader
 SUPPORTED_MIMETYPES = [
@@ -98,7 +98,7 @@ class DoclingStream(CheckpointMixin, Stream):
     # Define logger as a class attribute
     logger = logger
 
-    def __init__(self, paths: List[str], export_type: str = DEFAULT_EXPORT_TYPE, chunker_tokenizer: str = None):
+    def __init__(self, paths: List[str], export_type: str = DEFAULT_EXPORT_TYPE, chunker_tokenizer: str = None, sharepoint_config: SharepointConfig = None):
         self.paths = paths
         self._state = {}  # Initialize internal state storage for incremental sync
 
@@ -115,6 +115,8 @@ class DoclingStream(CheckpointMixin, Stream):
         self.logger.info(f"Using chunker tokenizer: {chunker_tokenizer}")
         self.chunker = HybridChunker(tokenizer=chunker_tokenizer, max_tokens=100)
         self.file_source = LocalFileSystemSource()
+        self.sharepoint_config = sharepoint_config
+
 
     @property
     def name(self) -> str:
