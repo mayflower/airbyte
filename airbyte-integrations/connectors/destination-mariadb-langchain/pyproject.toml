@@ -1,0 +1,48 @@
+[build-system]
+requires = [ "poetry-core>=1.0.0",]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "airbyte-destination-mariadb"
+version = "0.1.2"
+description = "Airbyte destination implementation for mariadb."
+authors = ["todo"]
+license = "MIT"
+readme = "README.md"
+
+homepage = "http://to.do"
+repository = "http://to.do"
+
+[[tool.poetry.packages]]
+include = "destination_mariadb_langchain"
+
+[tool.poetry.dependencies]
+python = "^3.10,<3.12"
+airbyte-cdk = "3.0.0"
+# this seems to be the last version which still works without that ominous java.lang.Integer.intValue() error
+airbyte = "^0.16.0"
+sqlalchemy = "<2.0"
+pymysql = "^1.1.1"
+pydevd-pycharm = "~243.26053.29"
+langchain = "^0.1.16"
+tiktoken = "^0.9.0"
+openai = "^1.75.0"
+cohere = "^5.15.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest-mock = "^3.6"
+freezegun = "^1.4.0"
+pytest = "^8.0.0"
+requests-mock = "^1.9.3"
+pre-commit = "^4.2.0"
+
+
+[tool.poetry.scripts]
+destination-mariadb = "destination_mariadb_langchain.run:run"
+
+[tool.poe]
+include = [
+    # Shared tasks definition file(s) can be imported here.
+    # Run `poe` or `poe --help` to see the list of available tasks.
+    "${POE_GIT_DIR}/poe-tasks/poetry-connector-tasks.toml",
+]

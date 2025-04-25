@@ -1,0 +1,67 @@
+#
+# Copyright (c) 2024 Airbyte, Inc., all rights reserved.
+#
+
+
+from pydantic.v1 import BaseModel, Field
+
+from airbyte_cdk.destinations.vector_db_based.config import VectorDBConfigModel
+
+
+class PasswordBasedAuthorizationModel(BaseModel):
+    password: str = Field(
+        ...,
+        title="Password",
+        airbyte_secret=True,
+        description="Enter the password you want to use to access the database",
+        examples=["AIRBYTE_PASSWORD"],
+        order=7,
+    )
+
+    class Config:
+        title = "Credentials"
+
+
+class MariaDBIndexingModel(BaseModel):
+    host: str = Field(
+        ...,
+        title="Host",
+        order=1,
+        description="Enter the account name you want to use to access the database.",
+        examples=["AIRBYTE_ACCOUNT"],
+    )
+    port: int = Field(
+        default=3306,
+        title="Port",
+        order=2,
+        description="Enter the port you want to use to access the database",
+        examples=["3306"],
+    )
+    database: str = Field(
+        ...,
+        title="Database",
+        order=4,
+        description="Enter the name of the database that you want to sync data into",
+        examples=["AIRBYTE_DATABASE"],
+    )
+    username: str = Field(
+        ...,
+        title="Username",
+        order=6,
+        description="Enter the name of the user you want to use to access the database",
+        examples=["AIRBYTE_USER"],
+    )
+
+    # E.g. "credentials": {"password": "AIRBYTE_PASSWORD"}
+    credentials: PasswordBasedAuthorizationModel
+
+    class Config:
+        title = "MariaDB Connection"
+        schema_extra = {
+            "description": "MariaDB can be used to store vector data and retrieve embeddings.",
+            "group": "indexing",
+        }
+
+
+class ConfigModel(VectorDBConfigModel):
+    indexing: MariaDBIndexingModel
