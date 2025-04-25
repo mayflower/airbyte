@@ -171,6 +171,7 @@ class MariaDBProcessor(abc.ABC):
         self._embedding_content_col_name = "content"
         self._embedding_meta_col_name = "metadata"
         self._embedding_emb_col_name = "embedding"
+        self._embedding_coll_id_col_name = "collection_id"
 
         self.temp_tables = {}
         self.splitter_config = splitter_config
@@ -180,7 +181,13 @@ class MariaDBProcessor(abc.ABC):
         self._catalog_provider: CatalogProvider | None = catalog_provider  # move up
 
         self.type_converter = self.type_converter_class()
-        self._cached_table_definitions: dict[str, sqlalchemy.Table] = {}
+
+
+        # cache of collection name (label) to collection ID
+        self._collection_id_cache: dict[str, str] = {}
+
+        # cache of currently existing tables
+        self._table_list_cache: list[str] | None = None
 
     def _get_sql_column_definitions(
         self,
@@ -309,7 +316,7 @@ class MariaDBProcessor(abc.ABC):
                 f"{self._embedding_content_col_name}, "
                 f"{self._embedding_meta_col_name}, "
                 f"{self._embedding_emb_col_name}, "
-                f"collection_id" # and this one is now hardcoded? whatever
+                f"{self._embedding_coll_id_col_name}"
                 f") VALUES ( :doc_id, :content, :meta , Vec_FromText( :embedding ), :collection_id ) "
                 f"ON DUPLICATE KEY UPDATE " 
                 f"{self._embedding_content_col_name} = "
@@ -367,18 +374,24 @@ class MariaDBProcessor(abc.ABC):
 
         # Create embedding table
         table_query = (
-            f"CREATE TABLE IF NOT EXISTS {self._embedding_table_name} ("
-            f"{self._embedding_id_col_name} VARCHAR(36)"
-            f" NOT NULL DEFAULT UUID_v7() PRIMARY KEY,"
-            f"{self._embedding_content_col_name} TEXT,"
-            f"{self._embedding_meta_col_name} JSON,"
-            f"{self._embedding_emb_col_name} VECTOR({self.embedding_dimensions}) NOT NULL,"
-            f"VECTOR INDEX {index_name} ({self._embedding_emb_col_name}) "
-            f") ENGINE=InnoDB"
+            f"""
+        CREATE TABLE IF NOT EXISTS {self._embedding_table_name} (
+            {self._embedding_id_col_name} VARCHAR(36) NOT NULL DEFAULT UUID_v7() PRIMARY KEY,
+            {self._embedding_content_col_name} TEXT,
+            {self._embedding_meta_col_name} JSON,
+            {self._embedding_emb_col_name} VECTOR({self.embedding_dimensions}) NOT NULL,
+            {self._embedding_coll_id_col_name} UUID,
+            VECTOR INDEX {index_name} ({self._embedding_emb_col_name}),
+            FOREIGN KEY ({self._embedding_coll_id_col_name}) REFERENCES {self._collection_table_name}({self._collection_id_col_name}) ON DELETE CASCADE,
+            INDEX coll_id_idx ({self._embedding_coll_id_col_name})
+        ) ENGINE=InnoDB
+        """
         )
+        
         self._execute_sql(text(table_query))
 
-        # TODO add foreign key constraint
+
+
 
     def _create_collection_table(self):
         # Create collection table index names
@@ -508,6 +521,12 @@ class MariaDBProcessor(abc.ABC):
             write_strategy = self.get_writing_strategy(stream_name)
 
         if write_strategy == WriteStrategy.REPLACE:
+            # idea: instead of temp tables, we create temp COLLECTIONS
+            # - create new collection, call it something like "temp_1338"
+            # - write stuff into that new collection
+            # - delete original collection, the entries should be ON DELETE CASCADEd (when the constraint is re-added...)
+            # - rename "temp_1338" to the proper name
+
             # - create temp table
             temp_table_name = self._ensure_temp_table(stream_name)
 
@@ -744,10 +763,8 @@ class MariaDBProcessor(abc.ABC):
         table_name: str,
     ) -> bool:
         """Return true if the given table exists.
-
-        Subclasses may override this method to provide a more efficient implementation.
         """
+        if self._table_list_cache is None:
+            self._table_list_cache = self._get_tables_list()
 
-        # TODO add caching
-
-        return table_name in self._get_tables_list()
+        return table_name in self._table_list_cache
