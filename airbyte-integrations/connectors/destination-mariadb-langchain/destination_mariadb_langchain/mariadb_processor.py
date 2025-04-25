@@ -320,6 +320,7 @@ class MariaDBProcessor(abc.ABC):
                 f"VALUES({self._embedding_emb_col_name})"
             )
         collection_id = self._get_collection_id(stream_name)
+        data = []
         for i, chunk in enumerate(document_chunks, start=0):
 
             # ok so here we need to insert it into the DB the langchain way
@@ -337,18 +338,17 @@ class MariaDBProcessor(abc.ABC):
             # binary_emb = self._embedding_to_binary(embeddings[i])
             # try doing it the Vec_FromText() style
             string_emb = embeddings[i]
-            # data = []
-            data = {
+            data.append({
                     "doc_id": chunk_id,
                     "content": chunk.page_content,
                     "meta": json.dumps(chunk.metadata),
                     "embedding": json.dumps(string_emb),
                     "collection_id": collection_id,
-               }
+               })
 
 
-            with self.get_sql_connection() as conn:
-                conn.execute(query, data)
+        with self.get_sql_connection() as conn:
+            conn.execute(query, data)
 
 
     def _ensure_tables_exist(self):
