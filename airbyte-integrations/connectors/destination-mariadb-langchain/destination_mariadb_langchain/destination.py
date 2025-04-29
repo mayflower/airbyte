@@ -34,8 +34,7 @@ class DestinationMariaDB(Destination):
                 username=config.indexing.username,
                 password=SecretString(config.indexing.credentials.password),
             ),
-            splitter_config=config.processing,
-            embedder_config=config.embedding,
+            config=config,
             catalog_provider=CatalogProvider(configured_catalog),
         )
 
@@ -45,8 +44,8 @@ class DestinationMariaDB(Destination):
         configured_catalog: ConfiguredAirbyteCatalog,
         input_messages: Iterable[AirbyteMessage],
     ) -> Iterable[AirbyteMessage]:
-        # import pydevd_pycharm
-        # pydevd_pycharm.settrace('192.168.178.27', port=55507, stdoutToServer=True, stderrToServer=True)
+        import pydevd_pycharm
+        pydevd_pycharm.settrace('192.168.178.27', port=55507, stdoutToServer=True, stderrToServer=True)
         logger.info("Write starting up")
         parsed_config = ConfigModel.parse_obj(config)
         self._init_sql_processor(config=parsed_config, configured_catalog=configured_catalog)
@@ -59,7 +58,6 @@ class DestinationMariaDB(Destination):
         except Exception as e:
             raise e
 
-        logger.info("After this, I should terminate")
 
     def check(self, check_logger: Logger, config: Mapping[str, Any]) -> AirbyteConnectionStatus:
         # import pydevd_pycharm
