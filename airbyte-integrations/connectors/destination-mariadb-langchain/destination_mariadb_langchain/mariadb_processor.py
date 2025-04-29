@@ -174,6 +174,7 @@ class MariaDBProcessor(abc.ABC):
         self._embedding_coll_id_col_name = "collection_id"
 
         self.temp_tables = {}
+        self.temp_streams = {}
         self.splitter_config = splitter_config
         self.embedder_config = embedder_config
 
@@ -297,10 +298,7 @@ class MariaDBProcessor(abc.ABC):
 
         return WriteStrategy.APPEND
 
-    def insert_airbyte_message(self, stream_name: str, table_name: str, input_message: AirbyteRecordMessage, merge: bool):
-
-
-        # TODO: consider merge: if not, maybe on duplicate ignore?
+    def insert_airbyte_message(self, stream_name: str, input_message: AirbyteRecordMessage, merge: bool):
 
         document_id = self._create_document_id(input_message)
         document_chunks, _ = self.splitter.process(input_message)
@@ -310,22 +308,27 @@ class MariaDBProcessor(abc.ABC):
         )
 
 
-        query = text(
-                f"INSERT INTO {self._embedding_table_name} ("
-                f"{self._embedding_id_col_name}, "
-                f"{self._embedding_content_col_name}, "
-                f"{self._embedding_meta_col_name}, "
-                f"{self._embedding_emb_col_name}, "
-                f"{self._embedding_coll_id_col_name}"
-                f") VALUES ( :doc_id, :content, :meta , Vec_FromText( :embedding ), :collection_id ) "
-                f"ON DUPLICATE KEY UPDATE " 
-                f"{self._embedding_content_col_name} = "
-                f"VALUES({self._embedding_content_col_name}), "
-                f"{self._embedding_meta_col_name} = "
-                f"VALUES({self._embedding_meta_col_name}), "
-                f"{self._embedding_emb_col_name} = "
-                f"VALUES({self._embedding_emb_col_name})"
-            )
+        query = f"""INSERT INTO {self._embedding_table_name} (
+                {self._embedding_id_col_name}, 
+                {self._embedding_content_col_name}, 
+                {self._embedding_meta_col_name}, 
+                {self._embedding_emb_col_name}, 
+                {self._embedding_coll_id_col_name}
+                ) VALUES ( :doc_id, :content, :meta , Vec_FromText( :embedding ), :collection_id ) 
+                """
+
+
+        if merge:
+            query += f"""ON DUPLICATE KEY UPDATE 
+                {self._embedding_content_col_name} = 
+                VALUES({self._embedding_content_col_name}), 
+                {self._embedding_meta_col_name} = 
+                VALUES({self._embedding_meta_col_name}), 
+                {self._embedding_emb_col_name} = 
+                VALUES({self._embedding_emb_col_name})"""
+        else:
+            query += """ON DUPLICATE KEY IGNORE"""
+
         collection_id = self._get_collection_id(stream_name)
         data = []
         for i, chunk in enumerate(document_chunks, start=0):
@@ -355,7 +358,7 @@ class MariaDBProcessor(abc.ABC):
 
 
         with self.get_sql_connection() as conn:
-            conn.execute(query, data)
+            conn.execute(text(query), data)
 
 
     def _ensure_tables_exist(self):
@@ -421,6 +424,8 @@ class MariaDBProcessor(abc.ABC):
 
     def _get_collection_id(self, collection_name: str):
         # upsert for collections
+        if collection_name in self._collection_id_cache:
+            return self._collection_id_cache[collection_name]
 
         # table_name = self._collection_table_name
         
@@ -438,7 +443,7 @@ class MariaDBProcessor(abc.ABC):
 
         rows = result.fetchone()
         if rows:
-            # TODO add caching
+            self._collection_id_cache[collection_name] = rows[0]
             return rows[0]
 
         # other wise create
@@ -456,6 +461,7 @@ class MariaDBProcessor(abc.ABC):
 
         result = self._execute_sql(query, create_data)
         data = result.fetchone()
+        self._collection_id_cache[collection_name] = data[0]
 
         return data[0]
 
@@ -482,6 +488,20 @@ class MariaDBProcessor(abc.ABC):
             pass
         return result
 
+    def _get_temp_stream_name(self, stream_name):
+
+        if stream_name in self.temp_streams:
+            return self.temp_streams[stream_name]
+
+        uid = str(ulid.ULID())
+        temp_stream_name = self.normalizer.normalize(f"{stream_name}_{uid}")
+
+        self.temp_streams[stream_name] = temp_stream_name
+
+        return temp_stream_name
+
+
+
     def _ensure_temp_table(self, stream_name):
         """
         Creates a new temp table for the given stream, or returns an existing name
@@ -493,10 +513,10 @@ class MariaDBProcessor(abc.ABC):
         self.temp_tables[stream_name] = temp_table_name
         return temp_table_name
 
-    def _finalize_temp_tables(self):
-        for stream_name, temp_table in self.temp_tables.items():
-            final_table_name = self.get_sql_table_name(stream_name)
-            self._swap_temp_table_with_final_table(stream_name=stream_name, temp_table_name=temp_table, final_table_name=final_table_name)
+    def _finalize_temp_streams(self):
+        for final_stream_name, temp_stream_name in self.temp_streams.items():
+            # swap
+            self._swap_temp_stream_with_final_stream(temp_stream_name, final_stream_name)
         pass
 
     def _get_tables_list(
@@ -514,9 +534,6 @@ class MariaDBProcessor(abc.ABC):
     ):
         stream_name = message.stream
 
-        # self._ensure_final_table_exists(stream_name) # todo remove
-        real_table_name = self.get_sql_table_name(stream_name)
-
         if write_strategy == WriteStrategy.AUTO:
             write_strategy = self.get_writing_strategy(stream_name)
 
@@ -527,26 +544,28 @@ class MariaDBProcessor(abc.ABC):
             # - delete original collection, the entries should be ON DELETE CASCADEd (when the constraint is re-added...)
             # - rename "temp_1338" to the proper name
 
+
+
             # - create temp table
-            temp_table_name = self._ensure_temp_table(stream_name)
+            temp_stream_name = self._get_temp_stream_name(stream_name)
 
             # - do the processing with appending
-            self.insert_airbyte_message(stream_name, temp_table_name, message, False)
+            self.insert_airbyte_message(temp_stream_name, message, True)
             #  _finalize_writing should then swap the tables back
             return
 
         if write_strategy == WriteStrategy.MERGE:
             # do the processing with merging
-            self.insert_airbyte_message(stream_name, real_table_name, message, True)
+            self.insert_airbyte_message(stream_name, message, True)
             return
 
         if write_strategy == WriteStrategy.APPEND:
             # do the processing with appending
-            self.insert_airbyte_message(stream_name, real_table_name, message, False)
+            self.insert_airbyte_message(stream_name, message, False)
             return
 
     def _finalize_writing(self):
-        self._finalize_temp_tables()
+        self._finalize_temp_streams()
 
     def process_airbyte_messages_as_generator(
         self,
@@ -730,6 +749,37 @@ class MariaDBProcessor(abc.ABC):
                 raise SQLRuntimeError(msg) from None  # from ex
 
         return result
+
+    def _swap_temp_stream_with_final_stream(
+            self,
+            temp_stream_name,
+            final_stream_name
+        ):
+
+        temp_id = self._get_collection_id(temp_stream_name)
+        final_id = self._get_collection_id(final_stream_name)
+
+        deletion_name = final_stream_name + "_deleteme"
+        params = {
+            "final_name": final_stream_name,
+            "final_id": final_id,
+            "deletion_name": deletion_name,
+            "temp_id": temp_id,
+        }
+
+        commands = [
+               text(f"UPDATE {self._collection_table_name} SET label=:deletion_name WHERE id=:final_id;"),
+               text(f"UPDATE {self._collection_table_name} SET label=:final_name WHERE id=:temp_id;"),
+               text(f"DELETE FROM {self._collection_table_name} WHERE id=:final_id;"),
+        ]
+
+        for cmd in commands:
+            self._execute_sql(cmd, params)
+
+        # reset the cache
+        self._collection_id_cache = {}
+
+        pass
 
     def _swap_temp_table_with_final_table(
         self,

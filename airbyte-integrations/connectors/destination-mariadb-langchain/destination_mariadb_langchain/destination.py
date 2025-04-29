@@ -45,8 +45,8 @@ class DestinationMariaDB(Destination):
         configured_catalog: ConfiguredAirbyteCatalog,
         input_messages: Iterable[AirbyteMessage],
     ) -> Iterable[AirbyteMessage]:
-        import pydevd_pycharm
-        pydevd_pycharm.settrace('192.168.178.27', port=55507, stdoutToServer=True, stderrToServer=True)
+        # import pydevd_pycharm
+        # pydevd_pycharm.settrace('192.168.178.27', port=55507, stdoutToServer=True, stderrToServer=True)
         logger.info("Write starting up")
         parsed_config = ConfigModel.parse_obj(config)
         self._init_sql_processor(config=parsed_config, configured_catalog=configured_catalog)
