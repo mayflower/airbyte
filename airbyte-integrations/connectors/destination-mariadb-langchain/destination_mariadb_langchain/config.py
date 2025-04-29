@@ -62,6 +62,66 @@ class MariaDBIndexingModel(BaseModel):
             "group": "indexing",
         }
 
+class LangchainDbConfig(BaseModel):
+
+    collection_table_name: str = Field(
+        default="langchain_collection",
+        title="Collection Table Name",
+        description="Name of the table storing collections",
+    )
+
+    collection_id_col_name: str = Field(
+        default="id",
+        title="Collection ID Column Name",
+        description="Name of the primary key column",
+    )
+    collection_label_col_name: str = Field(
+        default="label",
+        title="Collection Label Column Name",
+        description="Name of the column storing collection labels (names)",
+    )
+    collection_meta_col_name: str = Field(
+        default="metadata",
+        title="Collection Metadata Column Name",
+        description="Name of the column storing collection metadata",
+    )
+
+    embedding_table_name: str = Field(
+        default="langchain_embedding",
+        title="Table Name",
+        description="Name of the table storing embeddings",
+    )
+    embedding_id_col_name: str = Field(
+        default="id",
+        title="ID Column Name",
+        description="Name of the primary key column",
+    )
+    embedding_content_col_name: str = Field(
+        default="content",
+        title="Content Column Name",
+        description="Name of the column storing content (text)",
+    )
+    embedding_meta_col_name: str = Field(
+        default="metadata",
+        title="Embedding Metadata Column Name",
+        description="Name of the column storing metadata (JSON)",
+    )
+    embedding_emb_col_name: str = Field(
+        default="embedding",
+        title="Embedding Vector Column Name",
+        description="Name of the column storing the embedding vectors",
+    )
+    embedding_coll_id_col_name: str = Field(
+        default="collection_id",
+        title="Collection ID Reference Column Name",
+        description="Name of the column storing the FK to the collections",
+    )
+
+    class Config:
+        # does this even do anything?
+        title = "Langchain DB Config"
+
 
 class ConfigModel(VectorDBConfigModel):
     indexing: MariaDBIndexingModel
+    langchain: LangchainDbConfig

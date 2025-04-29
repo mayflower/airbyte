@@ -102,15 +102,6 @@ class DatabaseConfig(BaseModel, abc.ABC):
             echo=DEBUG_MODE,
         )
 
-    def get_vendor_client(self) -> object:
-        """Return the vendor-specific client object.
-
-        This is used for vendor-specific operations.
-
-        Raises `NotImplementedError` if a custom vendor client is not defined.
-        """
-        raise NotImplementedError(f"The type '{type(self).__name__}' does not define a custom client.")
-
 
 class EmbeddingConfig(Protocol):
     """A protocol for embedding configuration.
@@ -123,27 +114,12 @@ class EmbeddingConfig(Protocol):
 
 
 class MariaDBProcessor(abc.ABC):
-    """A MariaDB implementation of the SQL Processor."""
-
-    supports_merge_insert = True
-    """We use the emulated merge code path because each primary key has multiple rows (chunks)."""
-
-    sql_config: DatabaseConfig
-    """The configuration for the MariaDB processor, including the vector length."""
 
     splitter_config: DocumentSplitterConfig
     """The configuration for the document splitter."""
 
-    sql_engine = None
-    """Allow the engine to be overwritten"""
-
-    type_converter_class: type[SQLTypeConverter] = SQLTypeConverter
-    """The type converter class to use for converting JSON schema types to SQL types."""
-
     normalizer = LowerCaseNormalizer
     """The name normalizer to user for table and column name normalization."""
-
-    """The file writer class to use for writing files to the cache."""
 
     def __init__(
         self,
@@ -154,28 +130,29 @@ class MariaDBProcessor(abc.ABC):
         """Initialize the MariaDB processor."""
 
         self.collection_metadata = None # for now. figure out how to actually use it later
-        self._collection_meta_col_name = "metadata"
-        self._collection_label_col_name = "label"
-        self._collection_id_col_name = "id"
-        self._collection_table_name = "langchain_collection"
-        self._embedding_table_name = "langchain_embedding"
-        self._embedding_id_col_name = "id"
-        self._embedding_content_col_name = "content"
-        self._embedding_meta_col_name = "metadata"
-        self._embedding_emb_col_name = "embedding"
-        self._embedding_coll_id_col_name = "collection_id"
+
+        self._collection_table_name     = self._sanitize_identifier(config.langchain.collection_table_name)
+        self._collection_id_col_name    = self._sanitize_identifier(config.langchain.collection_id_col_name)
+        self._collection_label_col_name = self._sanitize_identifier(config.langchain.collection_label_col_name)
+        self._collection_meta_col_name  = self._sanitize_identifier(config.langchain.collection_meta_col_name)
+
+        self._embedding_table_name = self._sanitize_identifier(config.langchain.embedding_table_name)
+        self._embedding_id_col_name = self._sanitize_identifier(config.langchain.embedding_id_col_name)
+        self._embedding_content_col_name = self._sanitize_identifier(config.langchain.embedding_content_col_name)
+        self._embedding_meta_col_name = self._sanitize_identifier(config.langchain.embedding_meta_col_name)
+        self._embedding_emb_col_name = self._sanitize_identifier(config.langchain.embedding_emb_col_name)
+        self._embedding_coll_id_col_name = self._sanitize_identifier(config.langchain.embedding_coll_id_col_name)
+
 
         self.temp_tables = {}
         self.temp_streams = {}
 
         self.splitter_config = config.processing
         self.embedder_config = config.embedding
+        self.config = config
 
         self._sql_config: DatabaseConfig = sql_config
-        self._catalog_provider: CatalogProvider | None = catalog_provider  # move up
-
-        self.type_converter = self.type_converter_class()
-
+        self._catalog_provider: CatalogProvider = catalog_provider
 
         # cache of collection name (label) to collection ID
         self._collection_id_cache: dict[str, str] = {}
@@ -192,7 +169,8 @@ class MariaDBProcessor(abc.ABC):
         """Return the fully qualified name of the given table."""
         return f"{self._quote_identifier(table_name)}"
 
-    def _quote_identifier(self, identifier: str) -> str:
+    @staticmethod
+    def _quote_identifier(identifier: str) -> str:
         """Return the given identifier, quoted."""
         return f"`{identifier}`"
 
@@ -303,25 +281,21 @@ class MariaDBProcessor(abc.ABC):
         collection_id = self._get_collection_id(stream_name)
         data = []
         for i, chunk in enumerate(document_chunks, start=0):
-
-            # ok so here we need to insert it into the DB the langchain way
-
-            # maybe generate the ID using the chunk index, too?
-            # or add an extra column which then gets the unique key constraint?
             chunk_id = f"{document_id}_{i}"
 
-
-
-            # doc_id, content, meta, embedding, collection_id
-
-
-            # this doesn't seem to work with conn.execute, so, trying this differently
             # binary_emb = self._embedding_to_binary(embeddings[i])
-            # try doing it the Vec_FromText() style
+            # Using binary embeddings doesn't seem to work with conn.execute.
+            # Maybe figure out how to use it later.
+            # Doing it the using the Vec_FromText for now.
             string_emb = embeddings[i]
+
+            content = chunk.page_content
+            if self.config.omit_raw_text:
+                content = ""
+
             data.append({
                     "doc_id": chunk_id,
-                    "content": chunk.page_content,
+                    "content": content,
                     "meta": json.dumps(chunk.metadata),
                     "embedding": json.dumps(string_emb),
                     "collection_id": collection_id,
@@ -341,10 +315,9 @@ class MariaDBProcessor(abc.ABC):
 
     def _create_embeddings_table(self):
         # Create embedding table index name
-        index_name = (
+        index_name = self._sanitize_identifier(
             f"idx_{self._embedding_table_name}_{self._embedding_emb_col_name}_idx"
         )
-        index_name = re.sub(r"[^0-9a-zA-Z_]", "", index_name)
 
         # Create embedding table
         table_query = (
@@ -390,18 +363,21 @@ class MariaDBProcessor(abc.ABC):
         return re.sub(r"[^0-9a-zA-Z_]", "", stuff)
 
     def _get_collection_id(self, collection_name: str):
-        # upsert for collections
+        """
+        Get or create a collection ID for the given name.
+        """
+
+        # if cached, return that
         if collection_name in self._collection_id_cache:
             return self._collection_id_cache[collection_name]
 
-        # table_name = self._collection_table_name
-        
+        # if not, look in the DB
         qry=f"""
         SELECT {self._quote_identifier(self._collection_id_col_name)} 
         FROM {self._quote_identifier(self._collection_table_name)}
         WHERE {self._quote_identifier(self._collection_label_col_name)} = :label
         """
-        #conn.execute(text(query), new_data)
+
         data = {
             "label": collection_name
         }
@@ -410,10 +386,11 @@ class MariaDBProcessor(abc.ABC):
 
         rows = result.fetchone()
         if rows:
+            # cache and return
             self._collection_id_cache[collection_name] = rows[0]
             return rows[0]
 
-        # other wise create
+        # Finally, create
         query = (
             f"INSERT INTO {self._collection_table_name}"
             f"({self._collection_label_col_name},"
@@ -428,6 +405,8 @@ class MariaDBProcessor(abc.ABC):
 
         result = self._execute_sql(query, create_data)
         data = result.fetchone()
+
+        # cache and return
         self._collection_id_cache[collection_name] = data[0]
 
         return data[0]
