@@ -379,7 +379,49 @@
         ],
         "description": "Postgres can be used to store vector data and retrieve embeddings.",
         "group": "indexing"
-      }
+      },
+      "langchain": [
+        {
+            "id": "collection_table_name",
+            "title": "Collection Table Name"
+          },
+          {
+            "id": "collection_id_col_name",
+            "title": "Collection ID Column Name"
+          },
+          {
+            "id": "collection_label_col_name",
+            "title": "Collection Label Column Name"
+          },
+          {
+            "id": "collection_meta_col_name",
+            "title": "Collection Metadata Column Name"
+          },
+          {
+            "id": "embedding_table_name",
+            "title": "Table Name"
+          },
+          {
+            "id": "embedding_id_col_name",
+            "title": "Embedding ID Column Name"
+          },
+          {
+            "id": "embedding_content_col_name",
+            "title": "Embedding Content Column Name"
+          },
+          {
+            "id": "embedding_meta_col_name",
+            "title": "Embedding Metadata Column Name"
+          },
+          {
+            "id": "embedding_emb_col_name",
+            "title": "Embedding Vector Column Name"
+          },
+          {
+            "id": "embedding_coll_id_col_name",
+            "title": "Collection ID Reference Column Name"
+          }
+      ]
     },
     "required": ["embedding", "processing", "indexing"],
     "groups": [

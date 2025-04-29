@@ -44,13 +44,11 @@ class DestinationMariaDB(Destination):
         configured_catalog: ConfiguredAirbyteCatalog,
         input_messages: Iterable[AirbyteMessage],
     ) -> Iterable[AirbyteMessage]:
-        import pydevd_pycharm
-        pydevd_pycharm.settrace('192.168.178.27', port=55507, stdoutToServer=True, stderrToServer=True)
-        logger.info("Write starting up")
+        # import pydevd_pycharm
+        # pydevd_pycharm.settrace('192.168.178.27', port=55507, stdoutToServer=True, stderrToServer=True)
         parsed_config = ConfigModel.parse_obj(config)
         self._init_sql_processor(config=parsed_config, configured_catalog=configured_catalog)
         try:
-            logger.info("Before the yield from call")
             yield from self.sql_processor.process_airbyte_messages_as_generator(
                 input_messages=input_messages,
                 write_strategy=WriteStrategy.AUTO,
