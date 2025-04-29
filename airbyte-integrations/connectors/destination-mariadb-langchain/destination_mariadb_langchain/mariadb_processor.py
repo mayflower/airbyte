@@ -52,6 +52,7 @@ from airbyte_protocol.models import (
 )
 from destination_mariadb_langchain.common.catalog.catalog_providers import CatalogProvider
 from destination_mariadb_langchain.common.sql.mariadb_types import VECTOR
+from destination_mariadb_langchain.config import ConfigModel
 from destination_mariadb_langchain.globals import (
     CHUNK_ID_COLUMN,
     DOCUMENT_CONTENT_COLUMN,
@@ -155,8 +156,7 @@ class MariaDBProcessor(abc.ABC):
     def __init__(
         self,
         sql_config: DatabaseConfig,
-        splitter_config: DocumentSplitterConfig,
-        embedder_config: EmbeddingConfig,
+        config: ConfigModel,
         catalog_provider: CatalogProvider,
     ) -> None:
         """Initialize the MariaDB processor."""
@@ -175,8 +175,9 @@ class MariaDBProcessor(abc.ABC):
 
         self.temp_tables = {}
         self.temp_streams = {}
-        self.splitter_config = splitter_config
-        self.embedder_config = embedder_config
+
+        self.splitter_config = config.processing
+        self.embedder_config = config.embedding
 
         self._sql_config: DatabaseConfig = sql_config
         self._catalog_provider: CatalogProvider | None = catalog_provider  # move up
@@ -190,24 +191,7 @@ class MariaDBProcessor(abc.ABC):
         # cache of currently existing tables
         self._table_list_cache: list[str] | None = None
 
-    def _get_sql_column_definitions(
-        self,
-        stream_name: str,
-    ) -> dict[str, sqlalchemy.types.TypeEngine]:
-        """
-        Return the column definitions for the given stream.
 
-        Return the static column definitions for vector index tables.
-        """
-
-        _ = stream_name  # unused
-        return {
-            DOCUMENT_ID_COLUMN: sqlalchemy.types.VARCHAR(length=255),  # self.type_converter_class.get_string_type(), #
-            CHUNK_ID_COLUMN: sqlalchemy.types.VARCHAR(length=255),
-            METADATA_COLUMN: self.type_converter_class.get_json_type(),
-            DOCUMENT_CONTENT_COLUMN: sqlalchemy.types.TEXT(),
-            EMBEDDING_COLUMN: VECTOR(self.embedding_dimensions),  # Vector(self.embedding_dimensions),
-        }
 
     def _fully_qualified(
         self,
@@ -215,11 +199,6 @@ class MariaDBProcessor(abc.ABC):
     ) -> str:
         """Return the fully qualified name of the given table."""
         return f"{self._quote_identifier(table_name)}"
-
-    # yes
-    @staticmethod
-    def _get_placeholder_name(identifier: str) -> str:
-        return f"{identifier}_val"
 
     def _quote_identifier(self, identifier: str) -> str:
         """Return the given identifier, quoted."""
@@ -394,16 +373,12 @@ class MariaDBProcessor(abc.ABC):
         self._execute_sql(text(table_query))
 
 
-
-
     def _create_collection_table(self):
         # Create collection table index names
-        # ...why? does this thing even need a name?
         col_uniq_key_name = self._sanitize_identifier(
             f"idx_{self._collection_table_name}_{self._collection_label_col_name}"
         )
 
-        # todo try using parameters instead of string concats
         col_table_query = (
             f"""
             CREATE TABLE IF NOT EXISTS {self._collection_table_name}(
@@ -485,7 +460,7 @@ class MariaDBProcessor(abc.ABC):
                     record=chunk.record,
                 )
             )
-            pass
+
         return result
 
     def _get_temp_stream_name(self, stream_name):
@@ -500,18 +475,6 @@ class MariaDBProcessor(abc.ABC):
 
         return temp_stream_name
 
-
-
-    def _ensure_temp_table(self, stream_name):
-        """
-        Creates a new temp table for the given stream, or returns an existing name
-        """
-        if stream_name in self.temp_tables:
-            return self.temp_tables[stream_name]
-
-        temp_table_name = self._create_table_for_loading(stream_name, None)
-        self.temp_tables[stream_name] = temp_table_name
-        return temp_table_name
 
     def _finalize_temp_streams(self):
         for final_stream_name, temp_stream_name in self.temp_streams.items():
@@ -538,20 +501,12 @@ class MariaDBProcessor(abc.ABC):
             write_strategy = self.get_writing_strategy(stream_name)
 
         if write_strategy == WriteStrategy.REPLACE:
-            # idea: instead of temp tables, we create temp COLLECTIONS
-            # - create new collection, call it something like "temp_1338"
-            # - write stuff into that new collection
-            # - delete original collection, the entries should be ON DELETE CASCADEd (when the constraint is re-added...)
-            # - rename "temp_1338" to the proper name
-
-
-
             # - create temp table
             temp_stream_name = self._get_temp_stream_name(stream_name)
 
             # - do the processing with appending
             self.insert_airbyte_message(temp_stream_name, message, True)
-            #  _finalize_writing should then swap the tables back
+            #  _finalize_writing should then swap the streams back
             return
 
         if write_strategy == WriteStrategy.MERGE:
@@ -595,20 +550,14 @@ class MariaDBProcessor(abc.ABC):
             if message.type is Type.RECORD:
                 logger.info("Processing a RECORD")
                 self.process_airbyte_record_message(cast(AirbyteRecordMessage, message.record), write_strategy)
-                # self.insert_airbyte_message(stream_name, table_name, cast(AirbyteRecordMessage, message), merge)
+
             elif message.type is Type.STATE:
                 logger.info("Processing a STATE")
-                # apparently this is necessary for
-                # self._state_writer.write_state(message.state)
-                # writing shit at the wall and seeing what sticks at this point
-
-                # yielding state messages as-is seems to be correct
                 # yield message
                 queued_messages.append(message)
             else:
                 pass
 
-        # if I yield as I go, instead of queueing them, will this ever be called?
         self._finalize_writing()
 
         yield from queued_messages
@@ -652,82 +601,6 @@ class MariaDBProcessor(abc.ABC):
 
         connection.close()
         del connection
-
-    def get_sql_table_name(
-        self,
-        stream_name: str,
-    ) -> str:
-        """Return the name of the SQL table for the given stream."""
-        table_prefix = self.sql_config.table_prefix
-
-        return self.normalizer.normalize(
-            f"{table_prefix}{stream_name}",
-        )
-
-    def _get_temp_table_name(
-        self,
-        stream_name: str,
-        batch_id: str | None = None,  # ULID of the batch
-    ) -> str:
-        """Return a new (unique) temporary table name."""
-        batch_id = batch_id or str(ulid.ULID())
-        return self.normalizer.normalize(f"{stream_name}_{batch_id}")
-
-    def _create_table_for_loading(
-        self,
-        /,
-        stream_name: str,
-        batch_id: str | None,
-    ) -> str:
-        """Create a new table for loading data."""
-        temp_table_name = self._get_temp_table_name(stream_name, batch_id)
-        column_definition_str = ",\n  ".join(
-            f"{self._quote_identifier(column_name)} {sql_type}"
-            for column_name, sql_type in self._get_sql_column_definitions(stream_name).items()
-        )
-        self._create_table(temp_table_name, column_definition_str)
-
-        return temp_table_name
-
-    def _ensure_final_table_exists(
-        self,
-        stream_name: str,
-        *,
-        create_if_missing: bool = True,
-    ) -> str:
-        """Create the final table if it doesn't already exist.
-
-        Return the table name.
-        """
-        table_name = self.get_sql_table_name(stream_name)
-        did_exist = self._table_exists(table_name)
-        if not did_exist and create_if_missing:
-            column_definition_str = ",\n  ".join(
-                f"{self._quote_identifier(column_name)} {sql_type}"
-                for column_name, sql_type in self._get_sql_column_definitions(
-                    stream_name,
-                ).items()
-            )
-            self._create_table(table_name, column_definition_str, [DOCUMENT_ID_COLUMN])
-
-        return table_name
-
-    def _create_table(
-        self,
-        table_name: str,
-        column_definition_str: str,
-        primary_keys: list[str] | None = None,
-    ) -> None:
-        if primary_keys:
-            pk_str = ", ".join(primary_keys)
-            column_definition_str += f",\n  PRIMARY KEY ({pk_str})"
-
-        cmd = f"""
-        CREATE TABLE {self._fully_qualified(table_name)} (
-            {column_definition_str}
-        )
-        """
-        _ = self._execute_sql(cmd)
 
     def _execute_sql(self, sql: str | TextClause | Executable, *multiparams, **params) -> CursorResult:
         """Execute the given SQL statement."""
@@ -781,32 +654,6 @@ class MariaDBProcessor(abc.ABC):
 
         pass
 
-    def _swap_temp_table_with_final_table(
-        self,
-        stream_name: str,
-        temp_table_name: str,
-        final_table_name: str,
-    ) -> None:
-        """Merge the temp table into the main one.
-
-        This implementation requires MERGE support in the SQL DB.
-        Databases that do not support this syntax can override this method.
-        """
-        if final_table_name is None:
-            raise exc.PyAirbyteInternalError(message="Arg 'final_table_name' cannot be None.")
-        if temp_table_name is None:
-            raise exc.PyAirbyteInternalError(message="Arg 'temp_table_name' cannot be None.")
-
-        _ = stream_name
-        deletion_name = f"{final_table_name}_deleteme"
-        commands = "\n".join(
-            [
-                f"ALTER TABLE {self._fully_qualified(final_table_name)} RENAME TO {deletion_name};",
-                f"ALTER TABLE {self._fully_qualified(temp_table_name)} RENAME TO {final_table_name};",
-                f"DROP TABLE {self._fully_qualified(deletion_name)};",
-            ]
-        )
-        self._execute_sql(commands)
 
     def _table_exists(
         self,
