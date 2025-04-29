@@ -11,7 +11,7 @@ import logging
 import uuid
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Callable, Iterable, Optional, cast, List
+from typing import Iterable, Optional, cast, List
 
 import dpath
 import sqlalchemy
@@ -51,15 +51,7 @@ from airbyte_protocol.models import (
     AirbyteMessage,
 )
 from destination_mariadb_langchain.common.catalog.catalog_providers import CatalogProvider
-from destination_mariadb_langchain.common.sql.mariadb_types import VECTOR
 from destination_mariadb_langchain.config import ConfigModel
-from destination_mariadb_langchain.globals import (
-    CHUNK_ID_COLUMN,
-    DOCUMENT_CONTENT_COLUMN,
-    DOCUMENT_ID_COLUMN,
-    EMBEDDING_COLUMN,
-    METADATA_COLUMN,
-)
 import numpy as np
 import re
 
