@@ -1,0 +1,20 @@
+{
+  "processing": {
+    "text_fields": ["str_col"],
+    "metadata_fields": ["int_col"],
+    "chunk_size": 1000
+  },
+  "embedding": {
+    "mode": "openai",
+    "openai_key": "mykey"
+  },
+  "indexing": {
+    "host": "MYACCOUNT",
+    "port": 5432,
+    "database": "MYDATABASE",
+    "username": "MYUSERNAME",
+    "credentials": {
+      "password": "xxxxxxx"
+    }
+  }
+}
