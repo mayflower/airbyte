@@ -16,7 +16,7 @@ data:
   dockerImageTag: 0.1.0
   dockerRepository: airbyte/destination-testconnector
   githubIssueLabel: destination-testconnector
-
+  icon: icon.svg
   license: MIT
   name: MariaDB
 
