@@ -6,6 +6,7 @@ Mostly based on the default PGVector connector...
 from __future__ import annotations
 
 import abc
+import hashlib
 import json
 import logging
 import uuid
@@ -50,6 +51,8 @@ from airbyte_cdk.models.airbyte_protocol import DestinationSyncMode
 from airbyte_protocol.models import (
     AirbyteMessage,
 )
+from uuid_extensions import uuid7
+
 from destination_mariadb_langchain.common.catalog.catalog_providers import CatalogProvider
 from destination_mariadb_langchain.config import ConfigModel
 import numpy as np
@@ -120,6 +123,8 @@ class MariaDBProcessor(abc.ABC):
 
     normalizer = LowerCaseNormalizer
     """The name normalizer to user for table and column name normalization."""
+
+    id_field_length = 36
 
     def __init__(
         self,
@@ -193,13 +198,21 @@ class MariaDBProcessor(abc.ABC):
             catalog=self.catalog_provider.configured_catalog,
         )
 
+    def _shorten_document_id(self, message_id) -> str:
+        # shorten if necessary
+        if len(message_id) > self.id_field_length:
+            return hashlib.md5(message_id.encode()).hexdigest()
+
+        return message_id
+
     def _create_document_id(self, record_msg: AirbyteRecordMessage) -> str:
         """Create document id based on the primary key values. Returns a random uuid if no primary key is found"""
         stream_name = record_msg.stream
         primary_key = self._get_record_primary_key(record_msg=record_msg)
         if primary_key is not None:
-            return f"Stream_{stream_name}_Key_{primary_key}"
-        return str(uuid.uuid4().int)
+            return self._shorten_document_id(f"Stream_{stream_name}_Key_{primary_key}")
+
+        return str(uuid7().int)
 
     def _get_record_primary_key(self, record_msg: AirbyteRecordMessage) -> str | None:
         """Create primary key for the record by appending the primary keys."""
@@ -281,7 +294,7 @@ class MariaDBProcessor(abc.ABC):
         collection_id = self._get_collection_id(stream_name)
         data = []
         for i, chunk in enumerate(document_chunks, start=0):
-            chunk_id = f"{document_id}_{i}"
+            chunk_id = self._shorten_document_id(f"{document_id}_{i}")
 
             # binary_emb = self._embedding_to_binary(embeddings[i])
             # Using binary embeddings doesn't seem to work with conn.execute.
@@ -323,7 +336,7 @@ class MariaDBProcessor(abc.ABC):
         table_query = (
             f"""
         CREATE TABLE IF NOT EXISTS {self._embedding_table_name} (
-            {self._embedding_id_col_name} VARCHAR(36) NOT NULL DEFAULT UUID_v7() PRIMARY KEY,
+            {self._embedding_id_col_name} VARCHAR({self.id_field_length}) NOT NULL DEFAULT UUID_v7() PRIMARY KEY,
             {self._embedding_content_col_name} TEXT,
             {self._embedding_meta_col_name} JSON,
             {self._embedding_emb_col_name} VECTOR({self.embedding_dimensions}) NOT NULL,

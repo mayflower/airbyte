@@ -2971,12 +2971,12 @@ typing-extensions = ">=4.6.0,<4.7.0 || >4.7.0"
 
 [[package]]
 name = "pydevd-pycharm"
-version = "243.26053.29"
+version = "251.23774.444"
 description = "PyCharm Debugger (used in PyCharm and PyDev)"
 optional = false
 python-versions = "*"
 files = [
-    {file = "pydevd_pycharm-243.26053.29.tar.gz", hash = "sha256:d63403d249e6121121ed9236fd24a7631b1e5659a74c02954949e4f5e136211f"},
+    {file = "pydevd_pycharm-251.23774.444.tar.gz", hash = "sha256:e309b8d792ad169ef4c77c6579a8830db65a6032465cbeed8ef2473ca4b0ad47"},
 ]
 
 [[package]]
@@ -4343,4 +4343,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10,<3.12"
-content-hash = "509cd30a33cbab4537a1453279bdc2a88dad78c8e44b52517e434261b86d0236"
+content-hash = "5fc6fc7757ddedbbc98a1f49c85df96d9e1420084e1485affc8397d8689d1b62"
