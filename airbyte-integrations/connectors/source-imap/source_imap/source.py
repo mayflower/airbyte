@@ -1,14 +1,16 @@
+import logging
 import ssl
 from typing import Any, List, Mapping, Tuple, Optional
 
-from airbyte_cdk.logger import AirbyteLogger
-from airbyte_cdk.models import SyncMode
+
 from airbyte_cdk.sources import AbstractSource
 from airbyte_cdk.sources.streams import Stream
 from imapclient import IMAPClient
 from imapclient.exceptions import IMAPClientError, LoginError
 
 from .streams import MailStream
+
+# logger = logging.getLogger("airbyte")
 
 
 class SourceImap(AbstractSource):
@@ -34,7 +36,7 @@ class SourceImap(AbstractSource):
         return client
 
     def check_connection(
-        self, logger: AirbyteLogger, config: Mapping[str, Any]
+        self, logger:  logging.Logger, config: Mapping[str, Any]
     ) -> Tuple[bool, Optional[Any]]:
         """
         Tests if the input configuration can be used to successfully connect to the IMAP server.

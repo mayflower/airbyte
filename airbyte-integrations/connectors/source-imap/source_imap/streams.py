@@ -1,5 +1,7 @@
 import base64
 import email
+import logging
+
 import pendulum
 import ssl
 from email.header import decode_header, make_header
@@ -7,7 +9,6 @@ from email.parser import BytesParser
 from email.policy import default as default_email_policy
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Union, Generator, Tuple
 
-from airbyte_cdk.logger import AirbyteLogger
 from airbyte_cdk.models import SyncMode
 from airbyte_cdk.sources.streams import IncrementalMixin, Stream
 from imapclient import IMAPClient
@@ -27,19 +28,19 @@ class MailStream(Stream, IncrementalMixin):
     # Max number of UIDs to send in a single FETCH command to avoid overly long commands
     UID_FETCH_BATCH_SIZE = 500
 
-
     def __init__(self, config: Mapping[str, Any], source_name: str, **kwargs):
         super().__init__(**kwargs)
         self._config = config
-        self._logger = AirbyteLogger()
-        self._source_name = source_name # e.g. "source-imap"
+        self._logger = logging.getLogger("airbyte")
+
+        self._source_name = source_name  # e.g. "source-imap"
         self._client: Optional[IMAPClient] = None
         self._folder_selected = False
-        self._state = {} # Initialize state
+        self._state = {}  # Initialize state
 
     @property
     def name(self) -> str:
-        return f"{self._source_name}_emails" # e.g. source-imap_emails
+        return f"{self._source_name}_emails"  # e.g. source-imap_emails
 
     @property
     def state(self) -> Mapping[str, Any]:
@@ -64,7 +65,7 @@ class MailStream(Stream, IncrementalMixin):
 
     def _connect_and_select_folder(self):
         if self._client and self._client.is_connected() and self._folder_selected:
-            return # Already connected and folder selected
+            return  # Already connected and folder selected
 
         try:
             self._client = self._create_client()
@@ -81,7 +82,7 @@ class MailStream(Stream, IncrementalMixin):
         except LoginError as e:
             self._logger.error(f"Login failed: {e}")
             raise ConnectionError(f"Failed to login to IMAP server: {e}. Check credentials.") from e
-        except IMAPClient.Error as e: # Catch specific IMAP folder errors
+        except IMAPClient.Error as e:  # Catch specific IMAP folder errors
             self._logger.error(f"Error selecting folder '{folder}': {e}")
             if self._client and self._client.is_connected():
                 self._client.logout()
@@ -95,7 +96,6 @@ class MailStream(Stream, IncrementalMixin):
             self._client = None
             self._folder_selected = False
             raise ConnectionError(f"IMAPClient error: {e}") from e
-
 
     def _disconnect(self):
         if self._client and self._client.is_connected():
@@ -122,11 +122,11 @@ class MailStream(Stream, IncrementalMixin):
         except Exception as e:
             self._logger.warning(f"Could not decode header part: {header_value}. Error: {e}")
             if isinstance(header_value, bytes):
-                return header_value.decode('utf-8', errors='replace') # Fallback
+                return header_value.decode('utf-8', errors='replace')  # Fallback
             return str(header_value)
 
-
-    def _parse_email_body(self, msg: email.message.Message) -> Tuple[Optional[str], Optional[str], List[Dict[str, Any]]]:
+    def _parse_email_body(self, msg: email.message.Message) -> Tuple[
+        Optional[str], Optional[str], List[Dict[str, Any]]]:
         text_body = None
         html_body = None
         attachments = []
@@ -137,17 +137,19 @@ class MailStream(Stream, IncrementalMixin):
                 content_disposition = str(part.get("Content-Disposition"))
 
                 if "attachment" not in content_disposition:
-                    if content_type == "text/plain" and text_body is None: # Prefer first text/plain
+                    if content_type == "text/plain" and text_body is None:  # Prefer first text/plain
                         try:
-                            text_body = part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', errors='replace')
+                            text_body = part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8',
+                                                                             errors='replace')
                         except Exception as e:
                             self._logger.warning(f"Could not decode text part: {e}")
-                    elif content_type == "text/html" and html_body is None: # Prefer first text/html
+                    elif content_type == "text/html" and html_body is None:  # Prefer first text/html
                         try:
-                            html_body = part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', errors='replace')
+                            html_body = part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8',
+                                                                             errors='replace')
                         except Exception as e:
                             self._logger.warning(f"Could not decode html part: {e}")
-                else: # It's an attachment
+                else:  # It's an attachment
                     filename = part.get_filename()
                     if filename:
                         decoded_filename = self._decode_header_value(filename)
@@ -155,9 +157,10 @@ class MailStream(Stream, IncrementalMixin):
                             "filename": decoded_filename,
                             "content_type": content_type,
                             "size": len(part.get_payload(decode=True)),
-                            "content": base64.b64encode(part.get_payload(decode=True)).decode() # Optionally include content
+                            "content": base64.b64encode(part.get_payload(decode=True)).decode()
+                            # Optionally include content
                         })
-        else: # Not multipart, try to get body directly
+        else:  # Not multipart, try to get body directly
             content_type = msg.get_content_type()
             try:
                 payload = msg.get_payload(decode=True)
@@ -167,13 +170,12 @@ class MailStream(Stream, IncrementalMixin):
                     text_body = body_content
                 elif content_type == "text/html":
                     html_body = body_content
-                else: # Fallback for unknown non-multipart type, treat as text
+                else:  # Fallback for unknown non-multipart type, treat as text
                     text_body = body_content
             except Exception as e:
                 self._logger.warning(f"Could not decode single part message body: {e}")
 
         return text_body, html_body, attachments
-
 
     def _process_message_data(self, uid: int, data: Dict[bytes, Any]) -> Optional[Dict[str, Any]]:
         raw_rfc822 = data.get(b"BODY[]")
@@ -193,10 +195,10 @@ class MailStream(Stream, IncrementalMixin):
             # Need to parse it robustly. IMAPClient might already parse it for some servers.
             # If it's already a datetime object from IMAPClient, use it.
             if isinstance(internal_date_bytes, pendulum.DateTime):
-                 internal_date_dt = internal_date_bytes
-            elif isinstance(internal_date_bytes, str): # Common case
+                internal_date_dt = internal_date_bytes
+            elif isinstance(internal_date_bytes, str):  # Common case
                 internal_date_dt = pendulum.parse(internal_date_bytes.strip())
-            else: # bytes
+            else:  # bytes
                 internal_date_dt = pendulum.parse(internal_date_bytes.decode().strip())
 
             internal_date_iso = internal_date_dt.to_iso8601_string()
@@ -205,21 +207,23 @@ class MailStream(Stream, IncrementalMixin):
             # envelope.date can be None
             message_date_iso = None
             if envelope.date:
-                 message_date_iso = pendulum.instance(envelope.date).to_iso8601_string()
-
+                message_date_iso = pendulum.instance(envelope.date).to_iso8601_string()
 
             text_body, html_body, attachments = self._parse_email_body(email_message)
 
             # Decode headers carefully
             subject = self._decode_header_value(envelope.subject)
-            from_ = self._decode_header_value(make_header([(addr.mailbox, addr.host) for addr in envelope.from_] if envelope.from_ else []))
-            to_ = self._decode_header_value(make_header([(addr.mailbox, addr.host) for addr in envelope.to_] if envelope.to_ else []))
-            cc_ = self._decode_header_value(make_header([(addr.mailbox, addr.host) for addr in envelope.cc_] if envelope.cc_ else []))
+            from_ = self._decode_header_value(
+                make_header([(addr.mailbox, addr.host) for addr in envelope.from_] if envelope.from_ else []))
+            to_ = self._decode_header_value(
+                make_header([(addr.mailbox, addr.host) for addr in envelope.to_] if envelope.to_ else []))
+            cc_ = self._decode_header_value(
+                make_header([(addr.mailbox, addr.host) for addr in envelope.cc_] if envelope.cc_ else []))
 
             # Message-ID header is crucial for deduplication and unique identification
             message_id_header = email_message.get("Message-ID")
-            message_id = self._decode_header_value(message_id_header).strip('<>') if message_id_header else f"no-id-{uid}"
-
+            message_id = self._decode_header_value(message_id_header).strip(
+                '<>') if message_id_header else f"no-id-{uid}"
 
             record = {
                 "uid": uid,
@@ -228,14 +232,14 @@ class MailStream(Stream, IncrementalMixin):
                 "from_address": from_,
                 "to_addresses": to_,
                 "cc_addresses": cc_,
-                "sent_date": message_date_iso, # Date from email headers
-                "received_date": internal_date_iso, # Date email arrived at server (INTERNALDATE)
-                "internal_date": internal_date_iso, # Used as cursor
+                "sent_date": message_date_iso,  # Date from email headers
+                "received_date": internal_date_iso,  # Date email arrived at server (INTERNALDATE)
+                "internal_date": internal_date_iso,  # Used as cursor
                 "body_text": text_body,
                 "body_html": html_body,
-                "attachments": attachments, # List of {"filename": "...", "content_type": "...", "size": ...}
-                "flags": [f.decode('utf-8', 'replace') for f in flags], # e.g., ['\\Seen', '\\Answered']
-                "raw_rfc822_content_preview": raw_rfc822[:500].decode('utf-8', 'replace') # For debugging
+                "attachments": attachments,  # List of {"filename": "...", "content_type": "...", "size": ...}
+                "flags": [f.decode('utf-8', 'replace') for f in flags],  # e.g., ['\\Seen', '\\Answered']
+                "raw_rfc822_content_preview": raw_rfc822[:500].decode('utf-8', 'replace')  # For debugging
             }
             return record
 
@@ -243,9 +247,9 @@ class MailStream(Stream, IncrementalMixin):
             self._logger.error(f"Error processing message UID {uid}: {e}", exc_info=True)
             return None
 
-
-    def _get_search_criteria(self, sync_mode: SyncMode, stream_state: Optional[Mapping[str, Any]] = None) -> List[Union[str, bytes, List[Any]]]:
-        criteria = ["ALL"] # Start with all messages in the folder
+    def _get_search_criteria(self, sync_mode: SyncMode, stream_state: Optional[Mapping[str, Any]] = None) -> List[
+        Union[str, bytes, List[Any]]]:
+        criteria = ["ALL"]  # Start with all messages in the folder
 
         start_date_str = self._config.get("start_date")
         cursor_value_str = stream_state.get(self.cursor_field) if stream_state else None
@@ -270,7 +274,7 @@ class MailStream(Stream, IncrementalMixin):
                 if self._config.get("import_unread_only_for_incremental", True):
                     criteria = ["UNSEEN"]
                     self._logger.info("Incremental sync: Searching for UNSEEN messages.")
-                else: # Date-based incremental
+                else:  # Date-based incremental
                     if cursor_value_str:
                         # Add 1 day to cursor to get messages *after* that date.
                         # IMAP 'SINCE' is exclusive of the date part for some servers, inclusive for others.
@@ -289,12 +293,14 @@ class MailStream(Stream, IncrementalMixin):
                         # IMAP date format for search: DD-Mon-YYYY
                         since_date_imap_format = cursor_dt.strftime("%d-%b-%Y")
                         criteria = ["SINCE", since_date_imap_format]
-                        self._logger.info(f"Incremental sync: Searching for messages SINCE {since_date_imap_format} (from cursor {cursor_value_str}).")
+                        self._logger.info(
+                            f"Incremental sync: Searching for messages SINCE {since_date_imap_format} (from cursor {cursor_value_str}).")
 
             except Exception as e:
-                self._logger.warning(f"Could not parse cursor_value '{cursor_value_str}' for date-based incremental. Defaulting to UNSEEN or ALL. Error: {e}")
+                self._logger.warning(
+                    f"Could not parse cursor_value '{cursor_value_str}' for date-based incremental. Defaulting to UNSEEN or ALL. Error: {e}")
                 if self._config.get("import_unread_only_for_incremental", True):
-                     criteria = ["UNSEEN"]
+                    criteria = ["UNSEEN"]
                 # else, criteria remains ["ALL"] or uses start_date if that's next
 
         # Apply start_date if it's a full refresh or if incremental didn't set a 'SINCE' from cursor
@@ -311,7 +317,7 @@ class MailStream(Stream, IncrementalMixin):
                 if "UNSEEN" in criteria:
                     criteria.append("SINCE")
                     criteria.append(start_date_imap_format)
-                else: # criteria is ["ALL"] or something else without SINCE
+                else:  # criteria is ["ALL"] or something else without SINCE
                     criteria = ["SINCE", start_date_imap_format]
                 self._logger.info(f"Applying start_date: Searching for messages SINCE {start_date_imap_format}.")
             except Exception as e:
@@ -324,13 +330,12 @@ class MailStream(Stream, IncrementalMixin):
         self._logger.info(f"Final IMAP search criteria: {criteria}")
         return criteria
 
-
     def read_records(
-        self,
-        sync_mode: SyncMode,
-        cursor_field: Optional[List[str]] = None,
-        stream_slice: Optional[Mapping[str, Any]] = None,
-        stream_state: Optional[Mapping[str, Any]] = None,
+            self,
+            sync_mode: SyncMode,
+            cursor_field: Optional[List[str]] = None,
+            stream_slice: Optional[Mapping[str, Any]] = None,
+            stream_state: Optional[Mapping[str, Any]] = None,
     ) -> Generator[Dict[str, Any], None, None]:
 
         self._connect_and_select_folder()
@@ -345,7 +350,7 @@ class MailStream(Stream, IncrementalMixin):
             # Sort by UID to process in a somewhat consistent order, though INTERNALDATE is the cursor.
             # Some servers might not support SORT or return UIDs sorted by default.
             # For now, let's not specify sort and rely on default order.
-            message_uids = self._client.search(criteria=search_criteria) # Returns list of UIDs
+            message_uids = self._client.search(criteria=search_criteria)  # Returns list of UIDs
             self._logger.info(f"Found {len(message_uids)} message UIDs matching criteria.")
 
             if not message_uids:
@@ -357,10 +362,10 @@ class MailStream(Stream, IncrementalMixin):
             if latest_cursor_value:
                 latest_cursor_value = pendulum.parse(latest_cursor_value)
 
-
             for i in range(0, len(message_uids), self.UID_FETCH_BATCH_SIZE):
                 batch_uids = message_uids[i:i + self.UID_FETCH_BATCH_SIZE]
-                self._logger.info(f"Fetching details for UID batch {i // self.UID_FETCH_BATCH_SIZE + 1} ({len(batch_uids)} UIDs)")
+                self._logger.info(
+                    f"Fetching details for UID batch {i // self.UID_FETCH_BATCH_SIZE + 1} ({len(batch_uids)} UIDs)")
 
                 # Fetch ENVELOPE, INTERNALDATE, FLAGS, BODY.PEEK[] (non-altering) or BODY[]
                 # BODY.PEEK[] is preferred as it doesn't set \Seen flag.
@@ -386,10 +391,12 @@ class MailStream(Stream, IncrementalMixin):
 
                             yield record
                         except Exception as e:
-                            self._logger.error(f"Error parsing or comparing cursor for UID {uid} ('{record_cursor_val_str}'): {e}")
+                            self._logger.error(
+                                f"Error parsing or comparing cursor for UID {uid} ('{record_cursor_val_str}'): {e}")
 
             if latest_cursor_value:
-                 self._logger.info(f"Stream finished. Final state cursor for '{self.cursor_field}': {self._state.get(self.cursor_field)}")
+                self._logger.info(
+                    f"Stream finished. Final state cursor for '{self.cursor_field}': {self._state.get(self.cursor_field)}")
 
 
         except IMAPClientError as e:
@@ -401,21 +408,24 @@ class MailStream(Stream, IncrementalMixin):
         finally:
             self._disconnect()
 
-
     def get_json_schema(self) -> Mapping[str, Any]:
         return {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
             "properties": {
                 "uid": {"type": "integer", "description": "IMAP Unique ID of the message in the folder."},
-                "message_id": {"type": ["string", "null"], "description": "Message-ID header value (RFC822). Used as primary key."},
+                "message_id": {"type": ["string", "null"],
+                               "description": "Message-ID header value (RFC822). Used as primary key."},
                 "subject": {"type": ["string", "null"], "description": "Subject of the email."},
                 "from_address": {"type": ["string", "null"], "description": "Sender's email address(es)."},
                 "to_addresses": {"type": ["string", "null"], "description": "Recipient's email address(es)."},
                 "cc_addresses": {"type": ["string", "null"], "description": "CC recipient's email address(es)."},
-                "sent_date": {"type": ["string", "null"], "format": "date-time", "description": "Date from email 'Date' header."},
-                "received_date": {"type": ["string", "null"], "format": "date-time", "description": "Date email was received by the server (IMAP INTERNALDATE)."},
-                "internal_date": {"type": ["string", "null"], "format": "date-time", "description": "IMAP INTERNALDATE, used as cursor field."},
+                "sent_date": {"type": ["string", "null"], "format": "date-time",
+                              "description": "Date from email 'Date' header."},
+                "received_date": {"type": ["string", "null"], "format": "date-time",
+                                  "description": "Date email was received by the server (IMAP INTERNALDATE)."},
+                "internal_date": {"type": ["string", "null"], "format": "date-time",
+                                  "description": "IMAP INTERNALDATE, used as cursor field."},
                 "body_text": {"type": ["string", "null"], "description": "Plain text body of the email."},
                 "body_html": {"type": ["string", "null"], "description": "HTML body of the email."},
                 "attachments": {
@@ -436,12 +446,14 @@ class MailStream(Stream, IncrementalMixin):
                     "description": "IMAP flags for the message (e.g., \\Seen, \\Answered).",
                     "items": {"type": "string"}
                 },
-                "raw_rfc822_content_preview": {"type": ["string", "null"], "description": "Preview of the raw RFC822 email content (first 500 chars). For debugging."}
+                "raw_rfc822_content_preview": {"type": ["string", "null"],
+                                               "description": "Preview of the raw RFC822 email content (first 500 chars). For debugging."}
             }
         }
 
     def stream_slices(
-        self, sync_mode: SyncMode, cursor_field: Optional[List[str]] = None, stream_state: Optional[Mapping[str, Any]] = None
+            self, sync_mode: SyncMode, cursor_field: Optional[List[str]] = None,
+            stream_state: Optional[Mapping[str, Any]] = None
     ) -> Iterable[Optional[Mapping[str, Any]]]:
         # For IMAP, we typically don't need to slice by anything other than what read_records handles (e.g. folder).
         # If we were to support multiple folders in one stream instance (not typical for Airbyte stream design),
