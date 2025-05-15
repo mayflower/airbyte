@@ -4,7 +4,7 @@ import logging
 
 import pendulum
 import ssl
-from email.header import decode_header, make_header
+from email.header import decode_header, make_header, Header
 from email.parser import BytesParser
 from email.policy import default as default_email_policy
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Union, Generator, Tuple
@@ -13,7 +13,6 @@ from airbyte_cdk.models import SyncMode
 from airbyte_cdk.sources.streams import IncrementalMixin, Stream
 from imapclient import IMAPClient
 from imapclient.exceptions import IMAPClientError, LoginError
-from dateutil import parser as dateutil_parser
 
 
 class MailStream(Stream, IncrementalMixin):
@@ -64,9 +63,10 @@ class MailStream(Stream, IncrementalMixin):
         return client
 
     def _connect_and_select_folder(self):
-        if self._client and self._client.is_connected() and self._folder_selected:
+        if self._client and self._folder_selected:
             return  # Already connected and folder selected
 
+        folder = ""
         try:
             self._client = self._create_client()
             self._logger.info(f"Logging in as {self._config['username']}...")
@@ -84,21 +84,21 @@ class MailStream(Stream, IncrementalMixin):
             raise ConnectionError(f"Failed to login to IMAP server: {e}. Check credentials.") from e
         except IMAPClient.Error as e:  # Catch specific IMAP folder errors
             self._logger.error(f"Error selecting folder '{folder}': {e}")
-            if self._client and self._client.is_connected():
+            if self._client:
                 self._client.logout()
             self._client = None
             self._folder_selected = False
             raise ConnectionError(f"Failed to select IMAP folder '{folder}': {e}. Ensure it exists.") from e
         except IMAPClientError as e:
             self._logger.error(f"IMAPClient error during connect/select: {e}")
-            if self._client and self._client.is_connected():
+            if self._client:
                 self._client.logout()
             self._client = None
             self._folder_selected = False
             raise ConnectionError(f"IMAPClient error: {e}") from e
 
     def _disconnect(self):
-        if self._client and self._client.is_connected():
+        if self._client:
             try:
                 self._logger.info("Logging out and disconnecting from IMAP server.")
                 self._client.logout()
@@ -108,7 +108,7 @@ class MailStream(Stream, IncrementalMixin):
                 self._client = None
                 self._folder_selected = False
 
-    def _decode_header_value(self, header_value: Union[str, bytes]) -> str:
+    def _decode_header_value(self, header_value: Union[str, bytes, Header]) -> str:
         if not header_value:
             return ""
         try:
@@ -125,8 +125,7 @@ class MailStream(Stream, IncrementalMixin):
                 return header_value.decode('utf-8', errors='replace')  # Fallback
             return str(header_value)
 
-    def _parse_email_body(self, msg: email.message.Message) -> Tuple[
-        Optional[str], Optional[str], List[Dict[str, Any]]]:
+    def _parse_email_body(self, msg: email.message.Message) -> Tuple[Optional[str], Optional[str], List[Dict[str, Any]]]:
         text_body = None
         html_body = None
         attachments = []
@@ -198,8 +197,10 @@ class MailStream(Stream, IncrementalMixin):
                 internal_date_dt = internal_date_bytes
             elif isinstance(internal_date_bytes, str):  # Common case
                 internal_date_dt = pendulum.parse(internal_date_bytes.strip())
-            else:  # bytes
+            elif isinstance(internal_date_bytes, bytes):
                 internal_date_dt = pendulum.parse(internal_date_bytes.decode().strip())
+            else:  # unknown/invalid
+                internal_date_dt = pendulum.now()
 
             internal_date_iso = internal_date_dt.to_iso8601_string()
 
@@ -247,8 +248,7 @@ class MailStream(Stream, IncrementalMixin):
             self._logger.error(f"Error processing message UID {uid}: {e}", exc_info=True)
             return None
 
-    def _get_search_criteria(self, sync_mode: SyncMode, stream_state: Optional[Mapping[str, Any]] = None) -> List[
-        Union[str, bytes, List[Any]]]:
+    def _get_search_criteria(self, sync_mode: SyncMode, stream_state: Optional[Mapping[str, Any]] = None) -> List[Union[str, bytes, List[Any]]]:
         criteria = ["ALL"]  # Start with all messages in the folder
 
         start_date_str = self._config.get("start_date")

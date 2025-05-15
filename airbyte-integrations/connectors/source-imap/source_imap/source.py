@@ -46,6 +46,7 @@ class SourceImap(AbstractSource):
         :return: A tuple (boolean, error_message). If (True, None), the connection was successful.
                  If (False, error_message), the connection failed.
         """
+        client = None
         try:
             client = self._create_client(config)
             logger.info("Attempting to connect to IMAP server...")
@@ -86,7 +87,7 @@ class SourceImap(AbstractSource):
             logger.error(f"An unexpected error occurred during connection check: {e}")
             return False, f"An unexpected error occurred: {e}"
         finally:
-            if 'client' in locals() and client.is_connected():
+            if 'client' in locals() and client:
                 try:
                     client.logout()
                 except Exception:
