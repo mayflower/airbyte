@@ -1,0 +1,58 @@
+documentationUrl: https://example.com/airbyte-source-imap-docs # Replace with actual docs URL later
+connectionSpecification:
+  $schema: http://json-schema.org/draft-07/schema#
+  title: IMAP Source Spec
+  type: object
+  required:
+    - host
+    - username
+    - password
+  properties:
+    host:
+      type: string
+      title: IMAP Server Host
+      description: Hostname or IP address of the IMAP server.
+      order: 0
+    port:
+      type: integer
+      title: IMAP Server Port
+      description: Port number of the IMAP server.
+      default: 993
+      order: 1
+    username:
+      type: string
+      title: Username
+      description: Username for the IMAP account.
+      order: 2
+    password:
+      type: string
+      title: Password
+      description: Password for the IMAP account.
+      airbyte_secret: true
+      order: 3
+    folder:
+      type: string
+      title: Mail Folder
+      description: "Specific mail folder to sync. Defaults to INBOX. Use IMAP folder naming conventions (e.g., 'INBOX/Archive')."
+      default: "INBOX"
+      order: 4
+    use_ssl:
+      type: boolean
+      title: Use SSL/TLS
+      description: Connect using SSL/TLS encryption.
+      default: true
+      order: 5
+    start_date:
+      type: string
+      format: date-time
+      title: Start Date (for initial Full Refresh)
+      description: "For the initial sync (Full Refresh or first Incremental), import messages on or after this date. Format: YYYY-MM-DDTHH:mm:ssZ. If empty, all messages in the folder are considered (respecting server limits)."
+      examples: ["2023-01-01T00:00:00Z"]
+      order: 6
+      nullable: true
+    import_unread_only_for_incremental:
+      type: boolean
+      title: Import Unread Only (for Incremental)
+      description: "For incremental syncs: If true, only import messages currently marked as unread/unseen. If false, import messages newer than the last synced message based on their internal date or UID (more robust)."
+      default: true
+      order: 7

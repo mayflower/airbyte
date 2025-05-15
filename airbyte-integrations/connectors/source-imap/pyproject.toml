@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "source-imap"
+version = "0.1.0"
+description = "Airbyte IMAP Source Connector"
+authors = ["Martin Holzhauer <martin.holzhauer@mayflower.de>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "source_imap"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+airbyte-cdk = "^6.48.12"
+IMAPClient = "^3.0.1"
+python-dateutil = "^2.8.2"
+pendulum = "^3.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3"
+pytest-mock = "^3.6"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+source-imap = "source_imap.run:run"
